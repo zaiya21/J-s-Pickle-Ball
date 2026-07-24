@@ -1,12 +1,35 @@
 "use client";
-/* Admin dashboard — ported from admin.html + js/admin.js, operating on the
-   client content model (clientDb) for phase 1. Same markup/classes and the same
-   six tabs (overview, bookings, users, courts & maintenance, reviews, settings),
-   including the printable daily earnings report and the div bar charts. */
-import { useEffect, useState } from "react";
+/* Admin dashboard — ported from admin.html/js/admin.js, now backed by Supabase.
+   Data arrives as a server-fetched snapshot (props); every mutation calls a
+   server action and then router.refresh() to re-pull. Same markup/classes and
+   the same six tabs, printable daily report, and div bar charts. */
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
-import { DB, DB_KEY, seedClientDb } from "@/lib/clientDb";
+import { createClient } from "@/lib/supabase/client";
+import type { AdminData } from "@/lib/data";
+import type { ActionResult } from "@/lib/actions/guard";
+import {
+  markBookingPaid,
+  adminCancelBooking,
+  setUserRole,
+  setUserActive,
+  addCourt,
+  renameCourt,
+  toggleCourt,
+  setCourtPhoto,
+  addMaintenance,
+  deleteMaintenance,
+  saveHours,
+  savePricing,
+  savePolicy,
+  savePaymentNumbers,
+  setPaymentQr,
+  saveContact,
+  setGallerySlot,
+} from "@/lib/actions/admin";
+import { toggleReviewStatus, deleteReview } from "@/lib/actions/reviews";
 import {
   GALLERY_PLACEHOLDER,
   calcCourtCost,
@@ -14,29 +37,14 @@ import {
   escapeHtml,
   fmtDateLong,
   fmtHour,
-  imageFileToDataURL,
   timeAgo,
   todayStr,
 } from "@/lib/helpers";
 
 type Tab = "overview" | "bookings" | "users" | "courts" | "reviews" | "settings";
 
-function ThumbImg({
-  override,
-  base,
-  className,
-  alt,
-}: {
-  override?: string | null;
-  base?: number | null;
-  className?: string;
-  alt: string;
-}) {
-  const cands = override
-    ? [override]
-    : base
-      ? [`/p${base}.jpg`, `/p${base}.png`, `/p${base}.jpeg`, `/p${base}.webp`]
-      : [];
+function ThumbImg({ override, base, className, alt }: { override?: string | null; base?: number | null; className?: string; alt: string }) {
+  const cands = override ? [override] : base ? [`/p${base}.jpg`, `/p${base}.png`, `/p${base}.jpeg`, `/p${base}.webp`] : [];
   const [idx, setIdx] = useState(0);
   const src = idx < cands.length ? cands[idx] : GALLERY_PLACEHOLDER;
   // eslint-disable-next-line @next/next/no-img-element
@@ -62,55 +70,49 @@ function BarChart({ data, tip }: { data: { label: string; value: number }[]; tip
   );
 }
 
-export default function AdminClient() {
+export default function AdminClient({ data }: { data: AdminData }) {
   const me = useSession();
+  const router = useRouter();
   const { toast, confirm, showImage } = useToast();
-  const [ready, setReady] = useState(false);
-  const [ver, setVer] = useState(0);
+  const supabase = createClient();
+
   const [tab, setTab] = useState<Tab>("overview");
   const [filter, setFilter] = useState({ q: "", status: "all", date: "" });
   const [repDate, setRepDate] = useState(todayStr());
 
-  useEffect(() => {
-    seedClientDb().then(() => setReady(true));
-  }, []);
+  const s = data.settings;
+  const money = (n: number) => s.currency + Number(n).toLocaleString();
+  const courtName = (id: string) => (id === "all" ? "All courts" : data.courts.find((c) => c.id === id)?.name || "Court");
+  const userName = (id: string) => data.users.find((u) => u.id === id)?.name || "Unknown";
 
-  if (!ready) return <main className="page-wrap" />;
-  const d = DB.data!;
-  const bump = () => {
-    DB.save();
-    setVer((v) => v + 1);
-  };
-  const money = (n: number) => d.settings.currency + Number(n).toLocaleString();
-  const courtName = (id: string) => (id === "all" ? "All courts" : d.courts.find((c: any) => c.id === id)?.name || "Court");
-  const userName = (id: string) => DB.findUser(id)?.name || "Unknown";
-
-  /* ---------------- image upload helper (compress + save w/ rollback) --------------- */
-  async function uploadImage(file: File | undefined, apply: (dataURL: string) => void, rollback: () => void, opts?: { maxW?: number; q?: number }) {
-    if (!file || !file.type.startsWith("image/")) return;
-    try {
-      const dataURL = await imageFileToDataURL(file, opts?.maxW ?? 1000, opts?.q ?? 0.8);
-      apply(dataURL);
-      try {
-        DB.save();
-        setVer((v) => v + 1);
-      } catch {
-        rollback();
-        toast("Storage is full — try a smaller image.", "error");
-      }
-    } catch {
-      toast("Couldn't read that image file.", "error");
+  async function run(p: Promise<ActionResult>, okMsg?: string): Promise<boolean> {
+    const res = await p;
+    if (!res.ok) {
+      toast(res.error || "Action failed.", "error");
+      return false;
     }
+    if (okMsg) toast(okMsg, "success");
+    router.refresh();
+    return true;
+  }
+
+  async function uploadTo(path: string, file: File | undefined): Promise<string | null> {
+    if (!file || !file.type.startsWith("image/")) return null;
+    const { error } = await supabase.storage.from("media").upload(path, file, { upsert: true });
+    if (error) {
+      toast("Upload failed — try a smaller image.", "error");
+      return null;
+    }
+    return supabase.storage.from("media").getPublicUrl(path).data.publicUrl + `?t=${Date.now()}`;
   }
 
   /* ================= OVERVIEW ================= */
   function Overview() {
-    const s = d.settings;
     const today = todayStr();
-    const live = d.bookings.filter((b: any) => b.status !== "cancelled");
-    const todays = live.filter((b: any) => b.date === today);
-    const hoursToday = todays.reduce((t: number, b: any) => t + (b.end - b.start), 0);
-    const capacityToday = (s.closeHour - s.openHour) * d.courts.filter((c: any) => c.active).length;
+    const live = data.bookings.filter((b) => b.status !== "cancelled");
+    const todays = live.filter((b) => b.date === today);
+    const hoursToday = todays.reduce((t, b) => t + (b.end - b.start), 0);
+    const capacityToday = (s.closeHour - s.openHour) * data.courts.filter((c) => c.active).length;
     const occupancy = capacityToday ? Math.round((hoursToday / capacityToday) * 100) : 0;
 
     const last7: string[] = [];
@@ -119,18 +121,19 @@ export default function AdminClient() {
       dd.setDate(dd.getDate() - i);
       last7.push(dateToStr(dd));
     }
-    const paid = live.filter((b: any) => b.payStatus === "paid");
-    const weekRevenue = paid.filter((b: any) => last7.includes(b.date)).reduce((t: number, b: any) => t + b.amount, 0);
-    const members = d.users.filter((u: any) => u.role === "user" && u.active).length;
+    const weekRevenue = live
+      .filter((b) => b.payStatus === "paid" && last7.includes(b.date))
+      .reduce((t, b) => t + b.amount, 0);
+    const members = data.users.filter((u) => u.role === "user" && u.active).length;
 
     const perDay = last7.map((dd) => ({
       label: new Date(dd + "T00:00:00").toLocaleDateString(undefined, { weekday: "short" }),
-      value: live.filter((b: any) => b.date === dd).length,
+      value: live.filter((b) => b.date === dd).length,
     }));
     const perHour = [];
     for (let h = s.openHour; h < s.closeHour; h++) {
       let n = 0;
-      live.forEach((b: any) => {
+      live.forEach((b) => {
         if (h >= b.start && h < b.end) n++;
       });
       perHour.push({ label: fmtHour(h).replace(":00 ", ""), value: n });
@@ -142,7 +145,7 @@ export default function AdminClient() {
           <div className="kpi"><div className="kpi-num">{todays.length}</div><div className="kpi-label">Bookings today</div><div className="kpi-sub">{hoursToday} court-hours</div></div>
           <div className="kpi"><div className="kpi-num">{occupancy}%</div><div className="kpi-label">Occupancy today</div><div className="kpi-sub">of {capacityToday} available hours</div></div>
           <div className="kpi"><div className="kpi-num">{money(weekRevenue)}</div><div className="kpi-label">Revenue · last 7 days</div><div className="kpi-sub">paid bookings only</div></div>
-          <div className="kpi"><div className="kpi-num">{members}</div><div className="kpi-label">Active members</div><div className="kpi-sub">{d.users.length} total accounts</div></div>
+          <div className="kpi"><div className="kpi-num">{members}</div><div className="kpi-label">Active members</div><div className="kpi-sub">{data.users.length} total accounts</div></div>
         </div>
         <div className="card chart-card">
           <div className="chart-title">Bookings — last 7 days</div>
@@ -167,17 +170,16 @@ export default function AdminClient() {
   }
 
   function exportDailyReport(date: string) {
-    const bookings = d.bookings.filter((b: any) => b.date === date).sort((a: any, b: any) => a.start - b.start);
-    const active = bookings.filter((b: any) => b.status !== "cancelled");
-    const cancelled = bookings.filter((b: any) => b.status === "cancelled");
+    const bookings = data.bookings.filter((b) => b.date === date).sort((a, b) => a.start - b.start);
+    const active = bookings.filter((b) => b.status !== "cancelled");
+    const cancelled = bookings.filter((b) => b.status === "cancelled");
     const sum = (list: any[]) => list.reduce((t, b) => t + b.amount, 0);
-    const paidTotal = sum(active.filter((b: any) => b.payStatus === "paid"));
-    const unpaidTotal = sum(active.filter((b: any) => b.payStatus === "unpaid" || b.payStatus === "pending"));
-    const refundTotal = sum(cancelled.filter((b: any) => b.payStatus === "refunded"));
-    const hours = active.reduce((t: number, b: any) => t + (b.end - b.start), 0);
-    const paddles = active.reduce((t: number, b: any) => t + (b.paddles || 0), 0);
-    const s = d.settings;
-    const capacity = (s.closeHour - s.openHour) * d.courts.filter((c: any) => c.active).length;
+    const paidTotal = sum(active.filter((b) => b.payStatus === "paid"));
+    const unpaidTotal = sum(active.filter((b) => b.payStatus === "unpaid" || b.payStatus === "pending"));
+    const refundTotal = sum(cancelled.filter((b) => b.payStatus === "refunded"));
+    const hours = active.reduce((t, b) => t + (b.end - b.start), 0);
+    const paddles = active.reduce((t, b) => t + (b.paddles || 0), 0);
+    const capacity = (s.closeHour - s.openHour) * data.courts.filter((c) => c.active).length;
     const m = (n: number) => "₱" + Number(n).toLocaleString();
     const logo = `${location.origin}/Pickle%20Ball%20Logo.jpg`;
     const row = (b: any) => `
@@ -237,24 +239,18 @@ export default function AdminClient() {
 
   /* ================= BOOKINGS ================= */
   function Bookings() {
-    let rows = d.bookings
+    let rows = data.bookings
       .slice()
-      .sort((a: any, b: any) =>
+      .sort((a, b) =>
         (b.date + String(b.start).padStart(2, "0")).localeCompare(a.date + String(a.start).padStart(2, "0")),
       );
-    if (filter.status !== "all") rows = rows.filter((b: any) => b.status === filter.status);
-    if (filter.date) rows = rows.filter((b: any) => b.date === filter.date);
+    if (filter.status !== "all") rows = rows.filter((b) => b.status === filter.status);
+    if (filter.date) rows = rows.filter((b) => b.date === filter.date);
     if (filter.q) {
       const q = filter.q.toLowerCase();
-      rows = rows.filter((b: any) => b.ref.toLowerCase().includes(q) || userName(b.userId).toLowerCase().includes(q));
+      rows = rows.filter((b) => b.ref.toLowerCase().includes(q) || userName(b.userId).toLowerCase().includes(q));
     }
 
-    const markPaid = (b: any) => {
-      b.payStatus = "paid";
-      DB.notify(b.userId, `Payment received for booking ${b.ref}. See you on the court!`, "success");
-      toast("Marked as paid.", "success");
-      bump();
-    };
     const cxl = async (b: any) => {
       const ok = await confirm(
         "Cancel this booking?",
@@ -262,24 +258,13 @@ export default function AdminClient() {
         "Cancel booking",
       );
       if (!ok) return;
-      b.status = "cancelled";
-      b.cancelledAt = Date.now();
-      b.cancelledBy = "admin";
-      if (b.payStatus === "paid") b.payStatus = "refunded";
-      DB.notify(b.userId, `Your booking ${b.ref} on ${fmtDateLong(b.date)} was cancelled by the admin.`, "warn");
-      toast("Booking cancelled.", "success");
-      bump();
+      run(adminCancelBooking(b.id), "Booking cancelled.");
     };
 
     return (
       <>
         <div className="filter-row">
-          <input
-            type="text"
-            placeholder="Search ref or member…"
-            value={filter.q}
-            onChange={(e) => setFilter((f) => ({ ...f, q: e.target.value }))}
-          />
+          <input type="text" placeholder="Search ref or member…" value={filter.q} onChange={(e) => setFilter((f) => ({ ...f, q: e.target.value }))} />
           <input type="date" value={filter.date} onChange={(e) => setFilter((f) => ({ ...f, date: e.target.value }))} />
           <select value={filter.status} onChange={(e) => setFilter((f) => ({ ...f, status: e.target.value }))}>
             <option value="all">All statuses</option>
@@ -293,26 +278,19 @@ export default function AdminClient() {
         <div className="card table-wrap">
           <table className="data">
             <thead>
-              <tr>
-                <th>Ref</th><th>Member</th><th>Court</th><th>Date</th><th>Time</th><th>Amount</th><th>Payment</th><th>Status</th><th></th>
-              </tr>
+              <tr><th>Ref</th><th>Member</th><th>Court</th><th>Date</th><th>Time</th><th>Amount</th><th>Payment</th><th>Status</th><th></th></tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="muted center">No bookings found.</td>
-                </tr>
+                <tr><td colSpan={9} className="muted center">No bookings found.</td></tr>
               ) : (
-                rows.map((b: any) => (
+                rows.map((b) => (
                   <tr key={b.id}>
                     <td>{b.ref}</td>
                     <td>{userName(b.userId)}</td>
                     <td>{courtName(b.courtId)}</td>
                     <td>{fmtDateLong(b.date)}</td>
-                    <td>
-                      {fmtHour(b.start)}–{fmtHour(b.end)}
-                      {b.paddles ? ` · 🏓${b.paddles}` : ""}
-                    </td>
+                    <td>{fmtHour(b.start)}–{fmtHour(b.end)}{b.paddles ? ` · 🏓${b.paddles}` : ""}</td>
                     <td>{money(b.amount)}</td>
                     <td>
                       {b.payMethod}
@@ -321,25 +299,17 @@ export default function AdminClient() {
                       {b.proof && (
                         <>
                           <br />
-                          <button className="link-btn" onClick={() => showImage(b.proof, "Proof of payment " + b.ref)}>
-                            📎 view proof
-                          </button>
+                          <button className="link-btn" onClick={() => showImage(b.proof, "Proof of payment " + b.ref)}>📎 view proof</button>
                         </>
                       )}
                     </td>
-                    <td>
-                      <span className={`badge ${b.status}`}>{b.status}</span>
-                    </td>
+                    <td><span className={`badge ${b.status}`}>{b.status}</span></td>
                     <td className="row gap">
                       {b.status === "confirmed" && (b.payStatus === "unpaid" || b.payStatus === "pending") && (
-                        <button className="mini-btn" onClick={() => markPaid(b)}>
-                          Mark paid
-                        </button>
+                        <button className="mini-btn" onClick={() => run(markBookingPaid(b.id), "Marked as paid.")}>Mark paid</button>
                       )}
                       {b.status === "confirmed" && (
-                        <button className="mini-btn danger" onClick={() => cxl(b)}>
-                          Cancel
-                        </button>
+                        <button className="mini-btn danger" onClick={() => cxl(b)}>Cancel</button>
                       )}
                     </td>
                   </tr>
@@ -354,50 +324,37 @@ export default function AdminClient() {
 
   /* ================= USERS ================= */
   function Users() {
-    const users = d.users.slice().sort((a: any, b: any) => b.createdAt - a.createdAt);
-    const count = (uid: string) => d.bookings.filter((b: any) => b.userId === uid && b.status !== "cancelled").length;
-    const toggleRole = (u: any) => {
-      u.role = u.role === "admin" ? "user" : "admin";
-      toast(`${u.name} is now ${u.role === "admin" ? "an admin" : "a regular user"}.`, "success");
-      bump();
-    };
+    const users = data.users.slice().sort((a, b) => b.createdAt - a.createdAt);
+    const count = (uid: string) => data.bookings.filter((b) => b.userId === uid && b.status !== "cancelled").length;
     const toggleActive = async (u: any) => {
       if (u.active) {
         const ok = await confirm("Disable account?", `${u.name} will no longer be able to sign in or book courts.`, "Disable");
         if (!ok) return;
       }
-      u.active = !u.active;
-      toast(`${u.name}'s account ${u.active ? "enabled" : "disabled"}.`, "success");
-      bump();
+      run(setUserActive(u.id, !u.active), `${u.name}'s account ${u.active ? "disabled" : "enabled"}.`);
     };
     return (
       <div className="card table-wrap">
         <table className="data">
           <thead>
-            <tr>
-              <th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Verified</th><th>Bookings</th><th>Status</th><th></th>
-            </tr>
+            <tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Verified</th><th>Bookings</th><th>Status</th><th></th></tr>
           </thead>
           <tbody>
-            {users.map((u: any) => (
+            {users.map((u) => (
               <tr key={u.id}>
                 <td>{u.name}</td>
                 <td>{u.email}</td>
                 <td>{u.phone || "—"}</td>
-                <td>
-                  <span className={`badge ${u.role === "admin" ? "completed" : "pending"}`}>{u.role}</span>
-                </td>
-                <td>{u.verified ? "✅" : "—"}</td>
+                <td><span className={`badge ${u.role === "admin" ? "completed" : "pending"}`}>{u.role}</span></td>
+                <td>✅</td>
                 <td>{count(u.id)}</td>
-                <td>
-                  <span className={`badge ${u.active ? "confirmed" : "cancelled"}`}>{u.active ? "active" : "disabled"}</span>
-                </td>
+                <td><span className={`badge ${u.active ? "confirmed" : "cancelled"}`}>{u.active ? "active" : "disabled"}</span></td>
                 <td className="row gap">
                   {u.id === me?.id ? (
                     <span className="muted small">(you)</span>
                   ) : (
                     <>
-                      <button className="mini-btn" onClick={() => toggleRole(u)}>
+                      <button className="mini-btn" onClick={() => run(setUserRole(u.id, u.role === "admin" ? "user" : "admin"), `${u.name} is now ${u.role === "admin" ? "a regular user" : "an admin"}.`)}>
                         {u.role === "admin" ? "Make user" : "Make admin"}
                       </button>
                       <button className={`mini-btn ${u.active ? "danger" : ""}`} onClick={() => toggleActive(u)}>
@@ -416,9 +373,8 @@ export default function AdminClient() {
 
   /* ================= COURTS & MAINTENANCE ================= */
   function Courts() {
-    const maint = d.maintenance.slice().sort((a: any, b: any) => a.date.localeCompare(b.date));
+    const maint = data.maintenance.slice().sort((a, b) => a.date.localeCompare(b.date));
     const hourOptions = (selected: number) => {
-      const s = d.settings;
       const out = [];
       for (let h = s.openHour; h <= s.closeHour; h++) out.push({ h, label: fmtHour(h), selected: h === selected });
       return out;
@@ -430,13 +386,9 @@ export default function AdminClient() {
             <h3>Courts</h3>
             <div className="table-wrap">
               <table className="data">
-                <thead>
-                  <tr>
-                    <th>Photo</th><th>Court</th><th>Status</th><th></th>
-                  </tr>
-                </thead>
+                <thead><tr><th>Photo</th><th>Court</th><th>Status</th><th></th></tr></thead>
                 <tbody>
-                  {d.courts.map((c: any, i: number) => (
+                  {data.courts.map((c, i) => (
                     <tr key={c.id}>
                       <td>
                         <ThumbImg key={`${c.id}-${c.photo ? "o" : i}`} className="court-thumb" override={c.photo} base={i + 1} alt={`${c.name} photo`} />
@@ -447,25 +399,14 @@ export default function AdminClient() {
                               type="file"
                               accept="image/*"
                               hidden
-                              onChange={(e) => {
-                                const prev = c.photo;
-                                uploadImage(
-                                  e.target.files?.[0],
-                                  (url) => (c.photo = url),
-                                  () => (c.photo = prev),
-                                );
+                              onChange={async (e) => {
+                                const url = await uploadTo(`courts/${c.id}.jpg`, e.target.files?.[0]);
+                                if (url) run(setCourtPhoto(c.id, url), `${c.name} photo updated.`);
                               }}
                             />
                           </label>
                           {c.photo && (
-                            <button
-                              className="mini-btn danger"
-                              onClick={() => {
-                                delete c.photo;
-                                toast(`${c.name} photo reset to default.`, "success");
-                                bump();
-                              }}
-                            >
+                            <button className="mini-btn danger" onClick={() => run(setCourtPhoto(c.id, null), `${c.name} photo reset to default.`)}>
                               Reset
                             </button>
                           )}
@@ -476,30 +417,15 @@ export default function AdminClient() {
                         <br />
                         <span className="muted small">{c.photo ? "custom photo" : "default photo"}</span>
                       </td>
-                      <td>
-                        <span className={`badge ${c.active ? "confirmed" : "cancelled"}`}>{c.active ? "open" : "closed"}</span>
-                      </td>
+                      <td><span className={`badge ${c.active ? "confirmed" : "cancelled"}`}>{c.active ? "open" : "closed"}</span></td>
                       <td className="row gap">
-                        <button
-                          className="mini-btn"
-                          onClick={() => {
-                            const name = prompt("New name for " + c.name + ":", c.name);
-                            if (name && name.trim()) {
-                              c.name = name.trim().slice(0, 30);
-                              bump();
-                            }
-                          }}
-                        >
+                        <button className="mini-btn" onClick={() => {
+                          const name = prompt("New name for " + c.name + ":", c.name);
+                          if (name && name.trim()) run(renameCourt(c.id, name));
+                        }}>
                           Rename
                         </button>
-                        <button
-                          className={`mini-btn ${c.active ? "danger" : ""}`}
-                          onClick={() => {
-                            c.active = !c.active;
-                            toast(`${c.name} is now ${c.active ? "open" : "closed"} for booking.`, "success");
-                            bump();
-                          }}
-                        >
+                        <button className={`mini-btn ${c.active ? "danger" : ""}`} onClick={() => run(toggleCourt(c.id), `${c.name} is now ${c.active ? "closed" : "open"} for booking.`)}>
                           {c.active ? "Close" : "Open"}
                         </button>
                       </td>
@@ -511,88 +437,63 @@ export default function AdminClient() {
             <form
               className="inline-form"
               style={{ marginTop: ".9rem" }}
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
-                const name = String(fd.get("newCourtName") || "").trim();
-                if (!name) return;
-                d.courts.push({ id: DB.nextId("c"), name, active: true, note: "" });
-                toast(`${name} added.`, "success");
-                (e.currentTarget as HTMLFormElement).reset();
-                bump();
+                const name = String(fd.get("newCourtName") || "");
+                const form = e.currentTarget;
+                if (await run(addCourt(name), `${name.trim()} added.`)) form.reset();
               }}
             >
-              <label>
-                New court name <input type="text" name="newCourtName" maxLength={30} placeholder="Court 4" required />
-              </label>
-              <button className="btn primary" type="submit">
-                Add Court
-              </button>
+              <label>New court name <input type="text" name="newCourtName" maxLength={30} placeholder="Court 4" required /></label>
+              <button className="btn primary" type="submit">Add Court</button>
             </form>
           </div>
 
           <div className="card">
             <h3>Schedule maintenance</h3>
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
                 const start = Number(fd.get("mStart"));
                 const end = Number(fd.get("mEnd"));
                 const date = String(fd.get("mDate") || "");
-                if (end <= start) return toast("End time must be after start time.", "error");
-                if (!date) return toast("Pick a date.", "error");
                 const cid = String(fd.get("mCourt") || "all");
-                const clash = d.bookings.filter(
-                  (b: any) => b.status === "confirmed" && b.date === date && (cid === "all" || b.courtId === cid) && b.start < end && b.end > start,
+                if (end <= start) return toast("End time must be after start time.", "error");
+                const clash = data.bookings.filter(
+                  (b) => b.status === "confirmed" && b.date === date && (cid === "all" || b.courtId === cid) && b.start < end && b.end > start,
                 );
-                d.maintenance.push({ id: DB.nextId("m"), courtId: cid, date, start, end, reason: String(fd.get("mReason") || "").trim() });
-                toast(clash.length ? `Blocked — note: ${clash.length} existing booking(s) overlap this window.` : "Maintenance scheduled.", clash.length ? "warn" : "success");
-                bump();
+                const ok = await run(addMaintenance({ courtId: cid, date, start, end, reason: String(fd.get("mReason") || "") }));
+                if (ok) toast(clash.length ? `Blocked — note: ${clash.length} existing booking(s) overlap this window.` : "Maintenance scheduled.", clash.length ? "warn" : "success");
               }}
             >
               <label>
                 Court
                 <select name="mCourt" defaultValue="all">
                   <option value="all">All courts</option>
-                  {d.courts.map((c: any) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
+                  {data.courts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
               </label>
-              <label>
-                Date <input type="date" name="mDate" required min={todayStr()} />
-              </label>
+              <label>Date <input type="date" name="mDate" required min={todayStr()} /></label>
               <div className="inline-form">
                 <label>
                   From
-                  <select name="mStart" defaultValue={d.settings.openHour}>
-                    {hourOptions(d.settings.openHour).map((o) => (
-                      <option key={o.h} value={o.h}>
-                        {o.label}
-                      </option>
-                    ))}
+                  <select name="mStart" defaultValue={s.openHour}>
+                    {hourOptions(s.openHour).map((o) => (<option key={o.h} value={o.h}>{o.label}</option>))}
                   </select>
                 </label>
                 <label>
                   To
-                  <select name="mEnd" defaultValue={d.settings.openHour + 1}>
-                    {hourOptions(d.settings.openHour + 1).map((o) => (
-                      <option key={o.h} value={o.h}>
-                        {o.label}
-                      </option>
-                    ))}
+                  <select name="mEnd" defaultValue={s.openHour + 1}>
+                    {hourOptions(s.openHour + 1).map((o) => (<option key={o.h} value={o.h}>{o.label}</option>))}
                   </select>
                 </label>
               </div>
-              <label>
-                Reason <input type="text" name="mReason" maxLength={60} placeholder="Net repair, cleaning…" />
-              </label>
-              <button className="btn primary" type="submit">
-                Block Slots
-              </button>
+              <label>Reason <input type="text" name="mReason" maxLength={60} placeholder="Net repair, cleaning…" /></label>
+              <button className="btn primary" type="submit">Block Slots</button>
             </form>
           </div>
         </div>
@@ -600,36 +501,18 @@ export default function AdminClient() {
         <div className="card table-wrap" style={{ marginTop: "1rem" }}>
           <h3>Upcoming maintenance</h3>
           <table className="data">
-            <thead>
-              <tr>
-                <th>Court</th><th>Date</th><th>Time</th><th>Reason</th><th></th>
-              </tr>
-            </thead>
+            <thead><tr><th>Court</th><th>Date</th><th>Time</th><th>Reason</th><th></th></tr></thead>
             <tbody>
               {maint.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="muted center">No maintenance scheduled.</td>
-                </tr>
+                <tr><td colSpan={5} className="muted center">No maintenance scheduled.</td></tr>
               ) : (
-                maint.map((m: any) => (
+                maint.map((m) => (
                   <tr key={m.id}>
                     <td>{courtName(m.courtId)}</td>
                     <td>{fmtDateLong(m.date)}</td>
-                    <td>
-                      {fmtHour(m.start)}–{fmtHour(m.end)}
-                    </td>
+                    <td>{fmtHour(m.start)}–{fmtHour(m.end)}</td>
                     <td>{m.reason || "—"}</td>
-                    <td>
-                      <button
-                        className="mini-btn danger"
-                        onClick={() => {
-                          d.maintenance = d.maintenance.filter((x: any) => x.id !== m.id);
-                          bump();
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </td>
+                    <td><button className="mini-btn danger" onClick={() => run(deleteMaintenance(m.id))}>Remove</button></td>
                   </tr>
                 ))
               )}
@@ -642,57 +525,30 @@ export default function AdminClient() {
 
   /* ================= REVIEWS ================= */
   function Reviews() {
-    const reviews = (d.reviews || []).slice().sort((a: any, b: any) => b.at - a.at);
+    const reviews = data.reviews.slice().sort((a, b) => b.at - a.at);
     return (
       <div className="card table-wrap">
         <table className="data">
-          <thead>
-            <tr>
-              <th>Player</th><th>Rating</th><th>Comment</th><th>Posted</th><th>Status</th><th></th>
-            </tr>
-          </thead>
+          <thead><tr><th>Player</th><th>Rating</th><th>Comment</th><th>Posted</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {reviews.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="muted center">
-                  No player reviews yet — the landing page shows sample quotes until the first one arrives.
-                </td>
-              </tr>
+              <tr><td colSpan={6} className="muted center">No player reviews yet — the landing page shows sample quotes until the first one arrives.</td></tr>
             ) : (
-              reviews.map((r: any) => (
+              reviews.map((r) => (
                 <tr key={r.id}>
                   <td>{r.name}</td>
-                  <td>
-                    <span className="stars-show">
-                      {"★".repeat(r.rating)}
-                      {"☆".repeat(5 - r.rating)}
-                    </span>
-                  </td>
+                  <td><span className="stars-show">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span></td>
                   <td style={{ maxWidth: 340 }}>{r.text}</td>
                   <td>{timeAgo(r.at)}</td>
-                  <td>
-                    <span className={`badge ${r.status === "published" ? "confirmed" : "cancelled"}`}>{r.status}</span>
-                  </td>
+                  <td><span className={`badge ${r.status === "published" ? "confirmed" : "cancelled"}`}>{r.status}</span></td>
                   <td className="row gap">
-                    <button
-                      className="mini-btn"
-                      onClick={() => {
-                        r.status = r.status === "published" ? "hidden" : "published";
-                        toast(`Review ${r.status === "published" ? "published" : "hidden from the landing page"}.`, "success");
-                        bump();
-                      }}
-                    >
+                    <button className="mini-btn" onClick={() => run(toggleReviewStatus(r.id), `Review ${r.status === "published" ? "hidden from the landing page" : "published"}.`)}>
                       {r.status === "published" ? "Hide" : "Publish"}
                     </button>
-                    <button
-                      className="mini-btn danger"
-                      onClick={async () => {
-                        const ok = await confirm("Delete review?", `Permanently remove ${r.name}'s ${r.rating}-star review.`, "Delete");
-                        if (!ok) return;
-                        d.reviews = d.reviews.filter((x: any) => x.id !== r.id);
-                        bump();
-                      }}
-                    >
+                    <button className="mini-btn danger" onClick={async () => {
+                      const ok = await confirm("Delete review?", `Permanently remove ${r.name}'s ${r.rating}-star review.`, "Delete");
+                      if (ok) run(deleteReview(r.id));
+                    }}>
                       Delete
                     </button>
                   </td>
@@ -707,126 +563,44 @@ export default function AdminClient() {
 
   /* ================= SETTINGS ================= */
   function Settings() {
-    const s = d.settings;
     const allHourOptions = () => {
       const out = [];
       for (let h = 0; h <= 24; h++) out.push({ h, label: h === 24 ? "12:00 AM (midnight)" : fmtHour(h) });
       return out;
     };
+    const p = data.config;
     return (
       <div className="settings-grid">
         <div className="card">
           <h3>Operating hours</h3>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              const open = Number(fd.get("sOpen"));
-              const close = Number(fd.get("sClose"));
-              if (close <= open) return toast("Closing time must be after opening time.", "error");
-              s.openHour = open;
-              s.closeHour = close;
-              toast("Operating hours saved.", "success");
-              bump();
-            }}
-          >
-            <label>
-              Opens at
-              <select name="sOpen" defaultValue={s.openHour}>
-                {allHourOptions().map((o) => (
-                  <option key={o.h} value={o.h}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(saveHours(Number(fd.get("sOpen")), Number(fd.get("sClose"))), "Operating hours saved."); }}>
+            <label>Opens at
+              <select name="sOpen" defaultValue={s.openHour}>{allHourOptions().map((o) => (<option key={o.h} value={o.h}>{o.label}</option>))}</select>
             </label>
-            <label>
-              Closes at
-              <select name="sClose" defaultValue={s.closeHour}>
-                {allHourOptions().map((o) => (
-                  <option key={o.h} value={o.h}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+            <label>Closes at
+              <select name="sClose" defaultValue={s.closeHour}>{allHourOptions().map((o) => (<option key={o.h} value={o.h}>{o.label}</option>))}</select>
             </label>
-            <button className="btn primary" type="submit">
-              Save Hours
-            </button>
+            <button className="btn primary" type="submit">Save Hours</button>
           </form>
         </div>
 
         <div className="card">
           <h3>Pricing (₱)</h3>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              const price = Number(fd.get("sPrice"));
-              const disc = Number(fd.get("sDisc"));
-              if (disc > price) return toast("Discount cannot exceed the hourly rate.", "error");
-              s.pricePerHour = price;
-              s.discountAfterHours = Math.max(1, Number(fd.get("sAfter")));
-              s.discountPerHour = disc;
-              s.paddleRentPerHour = Number(fd.get("sPaddle"));
-              toast("Pricing saved — the Pricing page updates automatically.", "success");
-              bump();
-            }}
-          >
-            <label>
-              Court rate per hour <input type="number" name="sPrice" min={0} step={10} defaultValue={s.pricePerHour} />
-            </label>
-            <label>
-              Full-rate hours before discount <input type="number" name="sAfter" min={1} max={8} defaultValue={s.discountAfterHours} />
-            </label>
-            <label>
-              Discount per extra hour <input type="number" name="sDisc" min={0} step={10} defaultValue={s.discountPerHour} />
-            </label>
-            <label>
-              Paddle rental (per paddle / hour) <input type="number" name="sPaddle" min={0} step={10} defaultValue={s.paddleRentPerHour} />
-            </label>
-            <button className="btn primary" type="submit">
-              Save Pricing
-            </button>
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(savePricing(Number(fd.get("sPrice")), Number(fd.get("sAfter")), Number(fd.get("sDisc")), Number(fd.get("sPaddle"))), "Pricing saved — the Pricing page updates automatically."); }}>
+            <label>Court rate per hour <input type="number" name="sPrice" min={0} step={10} defaultValue={s.pricePerHour} /></label>
+            <label>Full-rate hours before discount <input type="number" name="sAfter" min={1} max={8} defaultValue={s.discountAfterHours} /></label>
+            <label>Discount per extra hour <input type="number" name="sDisc" min={0} step={10} defaultValue={s.discountPerHour} /></label>
+            <label>Paddle rental (per paddle / hour) <input type="number" name="sPaddle" min={0} step={10} defaultValue={s.paddleRentPerHour} /></label>
+            <button className="btn primary" type="submit">Save Pricing</button>
           </form>
         </div>
 
         <div className="card">
           <h3>Booking policy</h3>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              s.cancelHours = Math.max(0, Number(fd.get("sCancel")));
-              toast("Policy saved.", "success");
-              bump();
-            }}
-          >
-            <label>
-              Free cancellation window (hours before start) <input type="number" name="sCancel" min={0} max={48} defaultValue={s.cancelHours} />
-            </label>
-            <button className="btn primary" type="submit">
-              Save Policy
-            </button>
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(savePolicy(Number(fd.get("sCancel"))), "Policy saved."); }}>
+            <label>Free cancellation window (hours before start) <input type="number" name="sCancel" min={0} max={48} defaultValue={s.cancelHours} /></label>
+            <button className="btn primary" type="submit">Save Policy</button>
           </form>
-          <hr style={{ borderColor: "var(--border)", margin: "1.2rem 0" }} />
-          <h3>Danger zone</h3>
-          <p className="muted small">Erase every account, booking, and setting stored in this browser.</p>
-          <button
-            className="btn danger"
-            onClick={async () => {
-              const ok = await confirm(
-                "Reset ALL data?",
-                "This permanently deletes every user, booking, and setting in this browser.",
-                "Erase everything",
-              );
-              if (!ok) return;
-              localStorage.removeItem(DB_KEY);
-              location.href = "/";
-            }}
-          >
-            Reset All Data
-          </button>
         </div>
 
         <div className="card" style={{ gridColumn: "1/-1" }}>
@@ -835,68 +609,30 @@ export default function AdminClient() {
             Shown to players when they choose GCash or Bank Transfer at checkout. Upload the QR codes from your GCash /
             bank app — players can view and download them.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              d.payment.gcashNumber = String(fd.get("payGcashNum") || "").trim();
-              d.payment.bankAccount = String(fd.get("payBankNum") || "").trim();
-              toast("Payment numbers saved.", "success");
-              bump();
-            }}
-          >
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(savePaymentNumbers(String(fd.get("payGcashNum") || ""), String(fd.get("payBankNum") || "")), "Payment numbers saved."); }}>
             <div className="grid-2" style={{ marginBottom: 0 }}>
-              <label>
-                GCash number <input type="text" name="payGcashNum" maxLength={40} placeholder="0917 123 4567" defaultValue={d.payment.gcashNumber} />
-              </label>
-              <label>
-                Bank account number <input type="text" name="payBankNum" maxLength={60} placeholder="BDO · 1234-5678-90 · J's Pickle Yard" defaultValue={d.payment.bankAccount} />
-              </label>
+              <label>GCash number <input type="text" name="payGcashNum" maxLength={40} placeholder="0917 123 4567" defaultValue={p.gcashNumber} /></label>
+              <label>Bank account number <input type="text" name="payBankNum" maxLength={60} placeholder="BDO · 1234-5678-90 · J's Pickle Yard" defaultValue={p.bankAccount} /></label>
             </div>
-            <button className="btn primary" type="submit">
-              Save Payment Numbers
-            </button>
+            <button className="btn primary" type="submit">Save Payment Numbers</button>
           </form>
           <div className="gallery-admin" style={{ marginTop: "1.1rem" }}>
             {(["gcash", "bank"] as const).map((which) => {
-              const key = which === "gcash" ? "gcashQr" : "bankQr";
-              const has = !!(d.payment as any)[key];
+              const url = which === "gcash" ? p.gcashQr : p.bankQr;
               return (
                 <div className="gal-slot" key={which}>
-                  <ThumbImg key={`${which}-${has}`} className="qr-thumb" override={(d.payment as any)[key]} alt={`${which} QR code`} />
-                  <span className="gal-label">
-                    {which === "gcash" ? "GCash QR " : "Bank QR "}
-                    {has ? "· uploaded" : "· none"}
-                  </span>
+                  <ThumbImg key={`${which}-${url ? "o" : "n"}`} className="qr-thumb" override={url} alt={`${which} QR code`} />
+                  <span className="gal-label">{which === "gcash" ? "GCash QR " : "Bank QR "}{url ? "· uploaded" : "· none"}</span>
                   <div className="row gap">
                     <label className="mini-btn" style={{ cursor: "pointer" }}>
                       Change
-                      <input
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={(e) => {
-                          const prev = (d.payment as any)[key];
-                          uploadImage(
-                            e.target.files?.[0],
-                            (url) => ((d.payment as any)[key] = url),
-                            () => ((d.payment as any)[key] = prev),
-                            { maxW: 700, q: 0.85 },
-                          );
-                        }}
-                      />
+                      <input type="file" accept="image/*" hidden onChange={async (e) => {
+                        const u = await uploadTo(`config/${which}-qr.jpg`, e.target.files?.[0]);
+                        if (u) run(setPaymentQr(which, u), `${which === "gcash" ? "GCash" : "Bank"} QR uploaded.`);
+                      }} />
                     </label>
-                    {has && (
-                      <button
-                        className="mini-btn danger"
-                        onClick={() => {
-                          (d.payment as any)[key] = null;
-                          toast("QR code removed.", "success");
-                          bump();
-                        }}
-                      >
-                        Remove
-                      </button>
+                    {url && (
+                      <button className="mini-btn danger" onClick={() => run(setPaymentQr(which, null), "QR code removed.")}>Remove</button>
                     )}
                   </div>
                 </div>
@@ -910,39 +646,25 @@ export default function AdminClient() {
           <p className="muted small" style={{ marginBottom: ".9rem" }}>
             Shown on the Contacts page and in the home page&apos;s &quot;Find The Yard&quot; section.
           </p>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const fd = new FormData(e.currentTarget);
-              d.contact.address = String(fd.get("ciAddress") || "").trim();
-              d.contact.phone = String(fd.get("ciPhone") || "").trim();
-              d.contact.email = String(fd.get("ciEmail") || "").trim();
-              d.contact.socials = String(fd.get("ciSocials") || "").trim();
-              d.contact.note = String(fd.get("ciNote") || "").trim();
-              toast("Contact info saved — Contacts page and home page updated.", "success");
-              bump();
-            }}
-          >
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            const fd = new FormData(e.currentTarget);
+            run(saveContact({
+              address: String(fd.get("ciAddress") || ""),
+              phone: String(fd.get("ciPhone") || ""),
+              email: String(fd.get("ciEmail") || ""),
+              socials: String(fd.get("ciSocials") || ""),
+              note: String(fd.get("ciNote") || ""),
+            }), "Contact info saved — Contacts page and home page updated.");
+          }}>
             <div className="grid-2" style={{ marginBottom: 0 }}>
-              <label>
-                Address <input type="text" name="ciAddress" maxLength={120} defaultValue={d.contact.address} />
-              </label>
-              <label>
-                Phone / Viber <input type="text" name="ciPhone" maxLength={40} defaultValue={d.contact.phone} />
-              </label>
-              <label>
-                Email <input type="email" name="ciEmail" maxLength={80} defaultValue={d.contact.email} />
-              </label>
-              <label>
-                Socials <input type="text" name="ciSocials" maxLength={120} defaultValue={d.contact.socials} />
-              </label>
+              <label>Address <input type="text" name="ciAddress" maxLength={120} defaultValue={p.address} /></label>
+              <label>Phone / Viber <input type="text" name="ciPhone" maxLength={40} defaultValue={p.phone} /></label>
+              <label>Email <input type="email" name="ciEmail" maxLength={80} defaultValue={p.email} /></label>
+              <label>Socials <input type="text" name="ciSocials" maxLength={120} defaultValue={p.socials} /></label>
             </div>
-            <label>
-              Directions / parking note <input type="text" name="ciNote" maxLength={160} defaultValue={d.contact.note} />
-            </label>
-            <button className="btn primary" type="submit">
-              Save Contact Info
-            </button>
+            <label>Directions / parking note <input type="text" name="ciNote" maxLength={160} defaultValue={p.note} /></label>
+            <button className="btn primary" type="submit">Save Contact Info</button>
           </form>
         </div>
 
@@ -950,48 +672,26 @@ export default function AdminClient() {
           <h3>Homepage gallery (10 photos)</h3>
           <p className="muted small" style={{ marginBottom: ".9rem" }}>
             These rotate in the &quot;Inside The Yard&quot; slideshow on the home page. Uploads replace the default
-            p1.jpg–p10.jpg files (stored in this browser); Reset returns a slot to its default file. Slots with no upload
-            and no matching file are skipped by the slideshow.
+            p1.jpg–p10.jpg files; Reset returns a slot to its default file. Slots with no upload and no matching file are
+            skipped by the slideshow.
           </p>
           <div className="gallery-admin">
             {Array.from({ length: 10 }, (_, i) => i).map((i) => {
-              const ov = (d.gallery || [])[i];
+              const url = data.gallery[i];
               return (
                 <div className="gal-slot" key={i}>
-                  <ThumbImg key={`g${i}-${ov ? "o" : "d"}`} override={ov} base={i + 1} alt={`Gallery photo ${i + 1}`} />
-                  <span className="gal-label">
-                    Photo {i + 1}
-                    {ov ? " · custom" : " · default"}
-                  </span>
+                  <ThumbImg key={`g${i}-${url ? "o" : "d"}`} override={url} base={i + 1} alt={`Gallery photo ${i + 1}`} />
+                  <span className="gal-label">Photo {i + 1}{url ? " · custom" : " · default"}</span>
                   <div className="row gap">
                     <label className="mini-btn" style={{ cursor: "pointer" }}>
                       Change
-                      <input
-                        type="file"
-                        accept="image/*"
-                        hidden
-                        onChange={(e) => {
-                          if (!d.gallery) d.gallery = new Array(10).fill(null);
-                          const prev = d.gallery[i];
-                          uploadImage(
-                            e.target.files?.[0],
-                            (url) => (d.gallery[i] = url),
-                            () => (d.gallery[i] = prev),
-                          );
-                        }}
-                      />
+                      <input type="file" accept="image/*" hidden onChange={async (e) => {
+                        const u = await uploadTo(`gallery/${i}.jpg`, e.target.files?.[0]);
+                        if (u) run(setGallerySlot(i, u), `Photo ${i + 1} updated on the home page.`);
+                      }} />
                     </label>
-                    {ov && (
-                      <button
-                        className="mini-btn danger"
-                        onClick={() => {
-                          d.gallery[i] = null;
-                          toast(`Photo ${i + 1} reset to default (p${i + 1}.jpg).`, "success");
-                          bump();
-                        }}
-                      >
-                        Reset
-                      </button>
+                    {url && (
+                      <button className="mini-btn danger" onClick={() => run(setGallerySlot(i, null), `Photo ${i + 1} reset to default (p${i + 1}.jpg).`)}>Reset</button>
                     )}
                   </div>
                 </div>
@@ -1026,7 +726,7 @@ export default function AdminClient() {
         ))}
       </div>
 
-      <div id="adminBody" key={`${tab}-${ver}`}>
+      <div id="adminBody">
         {tab === "overview" && <Overview />}
         {tab === "bookings" && <Bookings />}
         {tab === "users" && <Users />}

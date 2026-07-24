@@ -1,36 +1,13 @@
-"use client";
-/* Contacts — ported from contacts.html + its inline script. Contact info and
-   the message form stay on the client content model (clientDb), as before. */
-import { useEffect, useState } from "react";
-import { useToast } from "@/components/toast";
-import { DB } from "@/lib/clientDb";
+import type { Metadata } from "next";
+import { getSettings, getSiteConfig } from "@/lib/data";
 import { fmtHour } from "@/lib/helpers";
+import ContactForm from "@/components/ContactForm";
 
-export default function ContactsPage() {
-  const { toast } = useToast();
-  const [loaded, setLoaded] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState("");
+export const metadata: Metadata = { title: "Contacts — J's Pickle Yard" };
 
-  useEffect(() => {
-    DB.load();
-    setLoaded(true);
-  }, []);
-
-  const s = loaded ? DB.data!.settings : DB.defaults().settings;
-  const c = loaded ? DB.data!.contact : DB.defaults().contact;
+export default async function ContactsPage() {
+  const [s, c] = await Promise.all([getSettings(), getSiteConfig()]);
   const hrs = `${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`;
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    DB.load();
-    DB.notifyAdmins(`📨 Message from ${name.trim()} (${email.trim()}): "${msg.trim().slice(0, 200)}"`);
-    setName("");
-    setEmail("");
-    setMsg("");
-    toast("Message sent! We'll get back to you soon.", "success");
-  }
 
   return (
     <main className="page-wrap">
@@ -53,23 +30,7 @@ export default function ContactsPage() {
 
         <div className="card">
           <h3>Send us a message</h3>
-          <form onSubmit={onSubmit}>
-            <label>
-              Your name
-              <input type="text" required maxLength={60} placeholder="Juan Dela Cruz" value={name} onChange={(e) => setName(e.target.value)} />
-            </label>
-            <label>
-              Email
-              <input type="email" required placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-            </label>
-            <label>
-              Message
-              <textarea required rows={5} maxLength={1000} placeholder="How can we help?" value={msg} onChange={(e) => setMsg(e.target.value)} />
-            </label>
-            <button className="btn primary" type="submit">
-              Send Message
-            </button>
-          </form>
+          <ContactForm />
         </div>
       </div>
 

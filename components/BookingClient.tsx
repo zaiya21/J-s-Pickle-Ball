@@ -7,7 +7,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
-import { DB } from "@/lib/clientDb";
 import { createBooking } from "@/lib/actions/bookings";
 import type { Court, Settings } from "@/lib/types";
 import {
@@ -59,7 +58,22 @@ function CourtPhoto({ n, name }: { n: number; name: string }) {
   );
 }
 
-export default function BookingClient({ courts, settings }: { courts: Court[]; settings: Settings }) {
+interface PayInfo {
+  gcashNumber: string;
+  bankAccount: string;
+  gcashQr: string | null;
+  bankQr: string | null;
+}
+
+export default function BookingClient({
+  courts,
+  settings,
+  pay,
+}: {
+  courts: Court[];
+  settings: Settings;
+  pay: PayInfo;
+}) {
   const user = useSession();
   const { toast } = useToast();
   const supabase = useMemo(() => createClient(), []);
@@ -75,18 +89,6 @@ export default function BookingClient({ courts, settings }: { courts: Court[]; s
   const [payMethod, setPayMethod] = useState("GCash");
   const [qr, setQr] = useState<null | "GCash" | "Bank Transfer">(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
-  const [pay, setPay] = useState({ gcashNumber: "", bankAccount: "", gcashQr: null as string | null, bankQr: null as string | null });
-
-  // payment display info comes from the client content model (phase 1)
-  useEffect(() => {
-    DB.load();
-    setPay({
-      gcashNumber: DB.data!.payment.gcashNumber,
-      bankAccount: DB.data!.payment.bankAccount,
-      gcashQr: DB.data!.payment.gcashQr,
-      bankQr: DB.data!.payment.bankQr,
-    });
-  }, []);
 
   const refresh = useCallback(async () => {
     if (!courtId) return;
@@ -188,13 +190,6 @@ export default function BookingClient({ courts, settings }: { courts: Court[]; s
       return toast(res.error || "Could not complete the booking.", "error");
     }
     const r = res.receipt;
-    // client-side notification for the bell (phase 1)
-    DB.load();
-    DB.notify(
-      user!.id,
-      `Booking confirmed: ${court!.name}, ${fmtDateLong(r.date)} ${fmtHour(r.start)}–${fmtHour(r.end)} (Ref ${r.ref}).`,
-      "success",
-    );
     setPayOpen(false);
     setReceipt({
       ref: r.ref,

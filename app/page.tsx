@@ -1,13 +1,12 @@
-"use client";
-/* Landing page — ported from index.html + its inline script. Stays on the
-   client content model (clientDb) for reviews/gallery/contact, exactly as the
-   original did. Marketing numbers use the client settings defaults. */
+/* Landing page — ported from index.html. Now server-rendered from Supabase
+   (settings, courts, site config, reviews, gallery), with two client islands:
+   the gallery slideshow and the review form. */
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSession } from "@/components/session";
-import { useToast } from "@/components/toast";
-import { DB } from "@/lib/clientDb";
-import { GALLERY_PLACEHOLDER, fmtHour } from "@/lib/helpers";
+import { getCurrentUser } from "@/lib/auth";
+import { getActiveCourts, getSettings, getSiteConfig, getPublishedReviews, getMyReview, getGallery } from "@/lib/data";
+import { fmtHour, money } from "@/lib/helpers";
+import HomeGallery from "@/components/HomeGallery";
+import ReviewForm from "@/components/ReviewForm";
 
 const SAMPLE_REVIEWS = [
   { name: "Migs R., 4.0 player", rating: 5, text: "Booking takes literally 30 seconds. Best-maintained courts in the city — the night lighting is perfect." },
@@ -15,159 +14,24 @@ const SAMPLE_REVIEWS = [
   { name: "Paolo S., newbie no more", rating: 4, text: "Started as a total beginner at their clinic. Six months later I'm joining the monthly tournament. This place is a community." },
 ];
 
-function Stars({ n }: { n: number }) {
-  return (
-    <span className="stars-show" aria-label={`${n} out of 5 stars`}>
-      {"★".repeat(n)}
-      {"☆".repeat(5 - n)}
-    </span>
-  );
+function stars(n: number) {
+  return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
-function tryLoadImage(cands: string[]): Promise<string | null> {
-  return new Promise((resolve) => {
-    let k = 0;
-    const img = new Image();
-    img.onload = () => resolve(cands[k]);
-    img.onerror = () => {
-      k++;
-      if (k < cands.length) img.src = cands[k];
-      else resolve(null);
-    };
-    img.src = cands[0];
-  });
-}
+export default async function HomePage() {
+  const [user, s, courts, c, published, gallery] = await Promise.all([
+    getCurrentUser(),
+    getSettings(),
+    getActiveCourts(),
+    getSiteConfig(),
+    getPublishedReviews(),
+    getGallery(),
+  ]);
+  const myReview = user ? await getMyReview(user.id) : null;
 
-function HomeGallery() {
-  const [sources, setSources] = useState<string[]>([]);
-  const [idx, setIdx] = useState(0);
-  const frontRef = useRef<HTMLImageElement>(null);
-  const backRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      DB.load();
-      const out: string[] = [];
-      for (let i = 0; i < 10; i++) {
-        const ov = (DB.data!.gallery || [])[i];
-        if (ov) {
-          out.push(ov);
-          continue;
-        }
-        const n = i + 1;
-        const src = await tryLoadImage([`/p${n}.jpg`, `/p${n}.png`, `/p${n}.jpeg`, `/p${n}.webp`]);
-        if (src) out.push(src);
-      }
-      if (!alive) return;
-      setSources(out.length ? out : [GALLERY_PLACEHOLDER]);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (sources.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const t = setInterval(() => goTo((idx + 1) % sources.length), 5000);
-      return () => clearInterval(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sources, idx]);
-
-  function goTo(n: number) {
-    if (n === idx) return;
-    const front = frontRef.current;
-    const back = backRef.current;
-    if (!front || !back) return;
-    back.onload = () => {
-      requestAnimationFrame(() => back.classList.add("show"));
-      setTimeout(() => {
-        front.src = back.src;
-        back.classList.remove("show");
-        setIdx(n);
-      }, 1300);
-    };
-    back.src = sources[n];
-  }
-
-  if (!sources.length) return <div className="home-gallery" />;
-
-  return (
-    <div className="home-gallery">
-      <div className="slideshow">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={frontRef} className="layer-front" src={sources[0]} alt="J's Pickle Yard court photo" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img ref={backRef} className="layer-back" alt="" aria-hidden="true" />
-        <div className="slide-dots">
-          {sources.map((_, i) => (
-            <button key={i} className={`dot ${i === idx ? "on" : ""}`} title={`Photo ${i + 1}`} onClick={() => goTo(i)} />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function HomePage() {
-  const user = useSession();
-  const { toast } = useToast();
-  const [loaded, setLoaded] = useState(false);
-  const [reviewsVer, setReviewsVer] = useState(0);
-  const [pickedRating, setPickedRating] = useState(5);
-  const [reviewText, setReviewText] = useState("");
-
-  useEffect(() => {
-    DB.load();
-    const mine = user ? (DB.data!.reviews || []).find((r: any) => r.userId === user.id) : null;
-    if (mine) {
-      setPickedRating(mine.rating);
-      setReviewText(mine.text);
-    }
-    setLoaded(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
-
-  const s = useMemo(() => (loaded ? DB.data!.settings : DB.defaults().settings), [loaded]);
-  const c = useMemo(() => (loaded ? DB.data!.contact : DB.defaults().contact), [loaded]);
-  const money = (n: number) => s.currency + Number(n).toLocaleString();
   const hrs = `${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`;
-  const activeCourts = loaded ? DB.data!.courts.filter((x: any) => x.active).length : 3;
-
-  const published = loaded
-    ? (DB.data!.reviews || []).filter((r: any) => r.status === "published").sort((a: any, b: any) => b.at - a.at)
-    : [];
+  const m = (n: number) => money(s, n);
   const reviewList = published.length ? published.slice(0, 6) : SAMPLE_REVIEWS;
-  const mine = loaded && user ? (DB.data!.reviews || []).find((r: any) => r.userId === user.id) : null;
-
-  function submitReview(e: React.FormEvent) {
-    e.preventDefault();
-    const text = reviewText.trim();
-    if (!text) return;
-    DB.load();
-    const existing = (DB.data!.reviews || []).find((r: any) => r.userId === user!.id);
-    if (existing) {
-      existing.rating = pickedRating;
-      existing.text = text;
-      existing.at = Date.now();
-      existing.status = "published";
-    } else {
-      DB.data!.reviews.push({
-        id: DB.nextId("r"),
-        userId: user!.id,
-        name: user!.name,
-        rating: pickedRating,
-        text,
-        at: Date.now(),
-        status: "published",
-      });
-      DB.notifyAdmins(`⭐ New ${pickedRating}-star review from ${user!.name}.`);
-    }
-    DB.save();
-    toast("Thanks for your review! 🎉", "success");
-    setReviewsVer((v) => v + 1);
-  }
 
   return (
     <>
@@ -181,8 +45,7 @@ export default function HomePage() {
             For <em>Pickleball</em>
           </h1>
           <p className="hero-sub">
-            Premium courts, easy online booking, and a community that loves the game. Open daily{" "}
-            <strong>{hrs}</strong>.
+            Premium courts, easy online booking, and a community that loves the game. Open daily <strong>{hrs}</strong>.
           </p>
           <div className="hero-cta">
             <Link className="btn primary big" href="/book">
@@ -197,28 +60,16 @@ export default function HomePage() {
 
       <section className="band">
         <div className="page-wrap stat-band">
-          <div className="stat">
-            <div className="stat-num">{activeCourts}</div>
-            <div className="stat-label">Courts</div>
-          </div>
-          <div className="stat">
-            <div className="stat-num">14</div>
-            <div className="stat-label">Hours open daily</div>
-          </div>
-          <div className="stat">
-            <div className="stat-num">{money(s.pricePerHour)}</div>
-            <div className="stat-label">Per hour</div>
-          </div>
-          <div className="stat">
-            <div className="stat-num">7 days</div>
-            <div className="stat-label">A week</div>
-          </div>
+          <div className="stat"><div className="stat-num">{courts.length}</div><div className="stat-label">Courts</div></div>
+          <div className="stat"><div className="stat-num">14</div><div className="stat-label">Hours open daily</div></div>
+          <div className="stat"><div className="stat-num">{m(s.pricePerHour)}</div><div className="stat-label">Per hour</div></div>
+          <div className="stat"><div className="stat-num">7 days</div><div className="stat-label">A week</div></div>
         </div>
       </section>
 
       <section className="page-wrap section">
         <h2 className="section-title neon">Inside The Yard</h2>
-        <HomeGallery />
+        <HomeGallery slots={gallery} />
       </section>
 
       <section className="page-wrap section">
@@ -252,28 +103,19 @@ export default function HomePage() {
           <div className="card price-card featured">
             <div className="price-icon">🎾</div>
             <h3>Court Rate</h3>
-            <div className="big-price">
-              <span>{money(s.pricePerHour)}</span>
-              <span className="per">/ hour</span>
-            </div>
+            <div className="big-price"><span>{m(s.pricePerHour)}</span><span className="per">/ hour</span></div>
             <p className="muted small">Per court, minimum 1 hour</p>
           </div>
           <div className="card price-card">
             <div className="price-icon">⏱</div>
             <h3>Extra Hours</h3>
-            <div className="big-price">
-              <span>{money(s.pricePerHour - s.discountPerHour)}</span>
-              <span className="per">/ hour</span>
-            </div>
+            <div className="big-price"><span>{m(s.pricePerHour - s.discountPerHour)}</span><span className="per">/ hour</span></div>
             <p className="muted small">₱50 off every hour after your first 2</p>
           </div>
           <div className="card price-card">
             <div className="price-icon">🏓</div>
             <h3>Paddle Rental</h3>
-            <div className="big-price">
-              <span>{money(s.paddleRentPerHour)}</span>
-              <span className="per">/ paddle / hr</span>
-            </div>
+            <div className="big-price"><span>{m(s.paddleRentPerHour)}</span><span className="per">/ paddle / hr</span></div>
             <p className="muted small">Balls included, free of charge</p>
           </div>
         </div>
@@ -317,64 +159,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="band" key={reviewsVer}>
+      <section className="band">
         <div className="page-wrap section">
           <h2 className="section-title neon">What Players Say</h2>
           <div className="quote-grid">
             {reviewList.map((r: any, i: number) => (
               <div className="card quote" key={r.id || i}>
-                <Stars n={r.rating} />
+                <span className="stars-show" aria-label={`${r.rating} out of 5 stars`}>
+                  {stars(r.rating)}
+                </span>
                 <p>&quot;{r.text}&quot;</p>
                 <span className="q-who">— {r.name}</span>
               </div>
             ))}
           </div>
-          <div className="card review-card">
-            {!user ? (
-              <>
-                <p className="center muted">Played at the Yard? We&apos;d love to hear from you.</p>
-                <p className="center" style={{ marginTop: ".6rem" }}>
-                  <Link className="btn primary" href="/login">
-                    Sign in to leave a review
-                  </Link>
-                </p>
-              </>
-            ) : (
-              <>
-                <h3 className="center">{mine ? "Edit your review" : "Leave a review"}</h3>
-                <div className="star-picker center">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      className={`star-btn ${n <= pickedRating ? "on" : ""}`}
-                      onClick={() => setPickedRating(n)}
-                    >
-                      ★
-                    </button>
-                  ))}
-                </div>
-                <form onSubmit={submitReview}>
-                  <label>
-                    Your comment
-                    <textarea
-                      rows={3}
-                      maxLength={300}
-                      required
-                      placeholder="How was your game at J's Pickle Yard?"
-                      value={reviewText}
-                      onChange={(e) => setReviewText(e.target.value)}
-                    />
-                  </label>
-                  <div className="center">
-                    <button className="btn primary" type="submit">
-                      {mine ? "Update Review" : "Post Review"}
-                    </button>
-                  </div>
-                </form>
-              </>
-            )}
-          </div>
+          <ReviewForm existingRating={myReview?.rating ?? null} existingText={myReview?.text ?? null} />
         </div>
       </section>
 

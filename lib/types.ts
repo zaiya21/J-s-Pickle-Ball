@@ -63,6 +63,59 @@ export interface Profile {
   createdAt: number;
 }
 
+export interface Review {
+  id: string;
+  userId: string;
+  name: string;
+  rating: number;
+  text: string;
+  status: "published" | "hidden";
+  at: number;
+}
+
+export interface EventRec {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  desc: string;
+  photos: string[];
+  createdAt: number;
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  msg: string;
+  type: string;
+  read: boolean;
+  at: number;
+}
+
+export interface SiteConfig {
+  gcashNumber: string;
+  bankAccount: string;
+  gcashQr: string | null;
+  bankQr: string | null;
+  address: string;
+  phone: string;
+  email: string;
+  socials: string;
+  note: string;
+}
+
+export const DEFAULT_SITE_CONFIG: SiteConfig = {
+  gcashNumber: "",
+  bankAccount: "",
+  gcashQr: null,
+  bankQr: null,
+  address: "123 Sports Complex Ave., Quezon City, Metro Manila",
+  phone: "0917 123 4567",
+  email: "hello@jspickleyard.com",
+  socials: "Facebook · Instagram · TikTok — @jspickleyard",
+  note: "Beside the main gym entrance — free parking for players.",
+};
+
 /* Matches DB.defaults().settings in js/db.js */
 export const DEFAULT_SETTINGS: Settings = {
   openHour: 8,

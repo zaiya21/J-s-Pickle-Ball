@@ -4,7 +4,7 @@
    js/booking.js confirmBooking() and js/mybookings.js cancel(). */
 import { createClient } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/data";
-import { calcTotal, bookingRef } from "@/lib/helpers";
+import { calcTotal, bookingRef, fmtDateLong, fmtHour } from "@/lib/helpers";
 
 export interface CreateBookingInput {
   courtId: string;
@@ -91,6 +91,23 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingA
     return { ok: false, error: "Could not save the booking. Please try again." };
   }
 
+  // notifications (member confirmation + admin alert)
+  const [{ data: court }, { data: profile }] = await Promise.all([
+    supabase.from("courts").select("name").eq("id", courtId).single(),
+    supabase.from("profiles").select("name").eq("id", user.id).single(),
+  ]);
+  const cname = court?.name ?? "Court";
+  const when = `${fmtDateLong(date)} ${fmtHour(start)}–${fmtHour(end)}`;
+  await supabase.rpc("add_notification", {
+    p_user: user.id,
+    p_msg: `Booking confirmed: ${cname}, ${when} (Ref ${ref}).`,
+    p_type: "success",
+  });
+  await supabase.rpc("add_admin_notification", {
+    p_msg: `New booking by ${profile?.name ?? "a member"}: ${cname}, ${when}.`,
+    p_type: "info",
+  });
+
   return {
     ok: true,
     receipt: { ref, courtId, date, start, end, paddles, amount, payMethod, payStatus },
@@ -114,15 +131,21 @@ export async function cancelBooking(id: string): Promise<BookingActionResult> {
   if (start.getTime() - Date.now() <= settings.cancelHours * 3600 * 1000)
     return { ok: false, error: `Too late to cancel — the ${settings.cancelHours}-hour policy applies.` };
 
-  const { error } = await supabase
-    .from("bookings")
-    .update({
-      status: "cancelled",
-      cancelled_at: new Date().toISOString(),
-      pay_status: b.pay_status === "paid" ? "refunded" : b.pay_status,
-    })
-    .eq("id", id);
-
+  const { error } = await supabase.rpc("cancel_booking_row", { p_id: id });
   if (error) return { ok: false, error: "Could not cancel. Please try again." };
+
+  const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).single();
+  const refunded = b.pay_status === "paid";
+  await supabase.rpc("add_notification", {
+    p_user: user.id,
+    p_msg: `Booking ${b.ref} on ${fmtDateLong(b.date)} was cancelled.${refunded ? " Refund issued." : ""}`,
+    p_type: "warn",
+  });
+  await supabase.rpc("add_admin_notification", {
+    p_msg: `${profile?.name ?? "A member"} cancelled booking ${b.ref} (${fmtDateLong(b.date)} ${fmtHour(
+      b.start_hour,
+    )}–${fmtHour(b.end_hour)}).`,
+    p_type: "info",
+  });
   return { ok: true };
 }

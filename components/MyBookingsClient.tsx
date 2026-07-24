@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
-import { DB } from "@/lib/clientDb";
 import { cancelBooking } from "@/lib/actions/bookings";
 import type { Settings } from "@/lib/types";
 import { fmtDateLong, fmtHour, money } from "@/lib/helpers";
@@ -87,8 +86,6 @@ export default function MyBookingsClient({
           : x,
       ),
     );
-    DB.load();
-    DB.notify(userId, `Booking ${b.ref} on ${fmtDateLong(b.date)} was cancelled.`, "warn");
     toast("Booking cancelled.", "success");
   }
 
@@ -99,11 +96,12 @@ export default function MyBookingsClient({
     if (upErr) return toast("Couldn't upload that image. Try a smaller file.", "error");
     const { data: pub } = supabase.storage.from("proofs").getPublicUrl(path);
     const url = `${pub.publicUrl}?t=${Date.now()}`;
-    const { error: dbErr } = await supabase
-      .from("bookings")
-      .update({ proof_url: url, proof_at: new Date().toISOString() })
-      .eq("id", b.id);
+    const { error: dbErr } = await supabase.rpc("set_booking_proof", { p_id: b.id, p_url: url });
     if (dbErr) return toast("Couldn't save the proof. Please try again.", "error");
+    await supabase.rpc("add_admin_notification", {
+      p_msg: `📎 Proof of payment uploaded for booking ${b.ref} (${money(settings, b.amount)} via ${b.payMethod}).`,
+      p_type: "info",
+    });
     setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, proof: url } : x)));
     toast("Proof of payment submitted — we'll verify it shortly!", "success");
   }

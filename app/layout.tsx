@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "@/css/styles.css";
 import { getCurrentUser } from "@/lib/auth";
+import { getNotifications } from "@/lib/data";
 import { SessionProvider, type ClientUser } from "@/components/session";
 import { ToastProvider } from "@/components/toast";
 import Header from "@/components/Header";
@@ -17,6 +18,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentUser();
+  const notifications = session ? await getNotifications(session.id) : [];
   const user: ClientUser | null = session
     ? {
         id: session.id,
@@ -41,7 +43,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <SessionProvider user={user}>
           <ToastProvider>
-            <Header />
+            <Header notifications={notifications} />
             {children}
             <Footer />
           </ToastProvider>

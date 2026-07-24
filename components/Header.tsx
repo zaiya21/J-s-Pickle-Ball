@@ -1,14 +1,15 @@
 "use client";
 /* Shared top bar — ported from Shell.renderHeader() in js/shell.js.
    Same markup/classes; active nav from usePathname; real Supabase logout;
-   notifications read from the client model (clientDb) for phase 1. */
+   notifications are fetched server-side (Supabase) and passed in. */
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSession } from "./session";
 import { createClient } from "@/lib/supabase/client";
-import { DB } from "@/lib/clientDb";
+import { markAllNotificationsRead } from "@/lib/actions/notifications";
 import { initials, timeAgo } from "@/lib/helpers";
+import type { Notification } from "@/lib/types";
 
 const NAV: [string, string, string][] = [
   ["home", "/", "Home"],
@@ -30,34 +31,12 @@ function keyForPath(path: string): string {
   return "";
 }
 
-interface Notif {
-  id: string;
-  userId: string;
-  msg: string;
-  read: boolean;
-  at: number;
-}
-
-export default function Header() {
+export default function Header({ notifications = [] }: { notifications?: Notification[] }) {
   const user = useSession();
   const pathname = usePathname();
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [notifs, setNotifs] = useState<Notif[]>([]);
-  const [hasUnread, setHasUnread] = useState(false);
-
-  const loadNotifs = () => {
-    if (!user) return;
-    DB.load();
-    const mine = (DB.data!.notifications as Notif[]).filter((n) => n.userId === user.id);
-    setNotifs(mine);
-    setHasUnread(mine.some((n) => !n.read));
-  };
-
-  useEffect(() => {
-    loadNotifs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  const [localRead, setLocalRead] = useState(false);
 
   // The auth pages render no header/footer (as login.html did).
   if (pathname === "/login" || pathname === "/reset") return null;
@@ -66,38 +45,27 @@ export default function Header() {
   const nav = [...NAV];
   if (user && user.role === "admin") nav.push(["admin", "/admin", "Admin"]);
 
+  const hasUnread = !localRead && notifications.some((n) => !n.read);
+
   const logout = async () => {
     await createClient().auth.signOut();
     router.push("/login");
     router.refresh();
   };
 
+  const markRead = async () => {
+    setLocalRead(true);
+    await markAllNotificationsRead();
+    router.refresh();
+  };
+
   const toggleBell = () => {
     const next = !drawerOpen;
     setDrawerOpen(next);
-    if (next) {
-      // opening marks the shown items read (as in Shell.renderNotifications)
-      DB.load();
-      const items = (DB.data!.notifications as Notif[])
-        .filter((n) => n.userId === user!.id)
-        .slice(0, 30);
-      items.forEach((n) => (n.read = true));
-      DB.save();
-      setHasUnread(false);
-      setNotifs((DB.data!.notifications as Notif[]).filter((n) => n.userId === user!.id));
-    }
+    if (next && hasUnread) markRead();
   };
 
-  const markAll = () => {
-    DB.load();
-    (DB.data!.notifications as Notif[]).forEach((n) => {
-      if (n.userId === user!.id) n.read = true;
-    });
-    DB.save();
-    loadNotifs();
-  };
-
-  const shown = notifs.slice(0, 30);
+  const shown = notifications.slice(0, 30);
 
   return (
     <div id="siteHeader">
@@ -142,7 +110,7 @@ export default function Header() {
         <div className={`notif-drawer ${drawerOpen ? "" : "hidden"}`}>
           <div className="notif-head">
             <strong>Notifications</strong>
-            <button className="link-btn" onClick={markAll}>
+            <button className="link-btn" onClick={markRead}>
               Mark all read
             </button>
           </div>
@@ -151,7 +119,7 @@ export default function Header() {
               <div className="notif-empty">No notifications yet.</div>
             ) : (
               shown.map((n) => (
-                <div key={n.id} className={`notif-item ${n.read ? "" : "unread"}`}>
+                <div key={n.id} className={`notif-item ${n.read || localRead ? "" : "unread"}`}>
                   {n.msg}
                   <span className="when">{timeAgo(n.at)}</span>
                 </div>
