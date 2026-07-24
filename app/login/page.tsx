@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { validPassword } from "@/lib/helpers";
+import { SUPABASE_CONFIGURED, NOT_CONFIGURED_MSG } from "@/lib/supabaseConfig";
 
 type Panel = "login" | "register" | "verify" | "forgot";
 
@@ -40,6 +41,13 @@ export default function LoginPage() {
 
   // Already signed in? Go home (mirrors js/auth.js DOMContentLoaded check).
   useEffect(() => {
+    if (!SUPABASE_CONFIGURED) {
+      toast(NOT_CONFIGURED_MSG, "warn");
+      return;
+    }
+    if (new URLSearchParams(window.location.search).get("error") === "auth") {
+      toast("That confirmation link is invalid or has expired — please try again.", "error");
+    }
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) router.replace("/");
     });
@@ -60,6 +68,7 @@ export default function LoginPage() {
 
   async function onLogin(e: React.FormEvent) {
     e.preventDefault();
+    if (!SUPABASE_CONFIGURED) return toast(NOT_CONFIGURED_MSG, "error");
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({
       email: loginEmail.trim().toLowerCase(),
@@ -80,6 +89,7 @@ export default function LoginPage() {
 
   async function onRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!SUPABASE_CONFIGURED) return toast(NOT_CONFIGURED_MSG, "error");
     const name = regName.trim();
     const email = regEmail.trim().toLowerCase();
     if (!name) return toast("Please enter your name.", "error");
@@ -118,6 +128,7 @@ export default function LoginPage() {
 
   async function onForgot(e: React.FormEvent) {
     e.preventDefault();
+    if (!SUPABASE_CONFIGURED) return toast(NOT_CONFIGURED_MSG, "error");
     const email = forgotEmail.trim().toLowerCase();
     setBusy(true);
     await supabase.auth.resetPasswordForEmail(email, {

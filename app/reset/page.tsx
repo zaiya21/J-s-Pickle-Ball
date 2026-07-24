@@ -7,6 +7,7 @@ import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { validPassword } from "@/lib/helpers";
+import { SUPABASE_CONFIGURED, NOT_CONFIGURED_MSG } from "@/lib/supabaseConfig";
 
 export default function ResetPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function ResetPage() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!SUPABASE_CONFIGURED) return toast(NOT_CONFIGURED_MSG, "error");
     if (!validPassword(pw))
       return toast("Password must be at least 8 characters with letters and numbers.", "error");
     if (pw !== pw2) return toast("Passwords do not match.", "error");
