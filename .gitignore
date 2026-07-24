@@ -5,3 +5,15 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Next.js / Node
+/node_modules
+/.next
+/out
+next-env.d.ts
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env*.local
