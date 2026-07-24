@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0a10">
+<title>My Profile — J's Pickle Yard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="profile">
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="siteHeader"></div>
+
+<main class="page-wrap">
+  <div class="page-head"><h1>My Profile</h1></div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Account details</h3>
+      <form id="profileForm">
+        <label>Full name <input type="text" id="profName" maxlength="60" required></label>
+        <label>Mobile number <input type="tel" id="profPhone" maxlength="20"></label>
+        <label>Email <input type="email" id="profEmail" disabled></label>
+        <button class="btn primary" type="submit">Save Changes</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Change password</h3>
+      <form id="passwordForm">
+        <label>Current password <input type="password" id="curPass" required autocomplete="current-password"></label>
+        <label>New password <input type="password" id="newPass" required autocomplete="new-password" placeholder="Min. 8 chars, letters &amp; numbers"></label>
+        <label>Confirm new password <input type="password" id="newPass2" required autocomplete="new-password"></label>
+        <button class="btn primary" type="submit">Update Password</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card stat-strip" id="profileStats"></div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="js/db.js"></script>
+<script src="js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  if (!Shell.guard({ requireAuth: true })) return;
+  Shell.renderHeader();
+  Shell.renderFooter();
+  const u = Shell.user;
+
+  document.getElementById("profName").value = u.name;
+  document.getElementById("profPhone").value = u.phone || "";
+  document.getElementById("profEmail").value = u.email;
+
+  // quick stats
+  const mine = DB.data.bookings.filter((b) => b.userId === u.id);
+  const played = mine.filter((b) => b.status !== "cancelled");
+  const hours = played.reduce((t, b) => t + (b.end - b.start), 0);
+  const spent = played.filter((b) => b.payStatus === "paid").reduce((t, b) => t + b.amount, 0);
+  document.getElementById("profileStats").innerHTML = `
+    <div class="stat"><div class="stat-num">${played.length}</div><div class="stat-label">Bookings</div></div>
+    <div class="stat"><div class="stat-num">${hours}</div><div class="stat-label">Hours played</div></div>
+    <div class="stat"><div class="stat-num">${fmtMoney(spent)}</div><div class="stat-label">Total paid</div></div>
+    <div class="stat"><div class="stat-num">${new Date(u.createdAt).toLocaleDateString(undefined, { month: "short", year: "numeric" })}</div><div class="stat-label">Member since</div></div>`;
+
+  document.getElementById("profileForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("profName").value.trim();
+    if (!name) return toast("Name cannot be empty.", "error");
+    u.name = name;
+    u.phone = document.getElementById("profPhone").value.trim();
+    DB.save();
+    toast("Profile updated.", "success");
+    Shell.renderHeader();
+  });
+
+  document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const cur = document.getElementById("curPass").value;
+    const next = document.getElementById("newPass").value;
+    const next2 = document.getElementById("newPass2").value;
+    if ((await hashPassword(cur, u.salt)) !== u.passHash)
+      return toast("Current password is incorrect.", "error");
+    if (next.length < 8 || !/[a-zA-Z]/.test(next) || !/\d/.test(next))
+      return toast("New password must be at least 8 characters with letters and numbers.", "error");
+    if (next !== next2) return toast("New passwords do not match.", "error");
+    u.salt = randomSalt();
+    u.passHash = await hashPassword(next, u.salt);
+    DB.save();
+    e.target.reset();
+    toast("Password changed.", "success");
+  });
+});
+</script>
+</body>
+</html>

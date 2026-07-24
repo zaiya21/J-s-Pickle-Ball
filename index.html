@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0a10">
+<title>J's Pickle Yard — Play • Connect • Compete</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="home">
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="siteHeader"></div>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-inner">
+    <img src="Pickle Ball Logo.jpg" alt="J's Pickle Yard logo" class="hero-logo">
+    <h1 class="neon">Your Home Court<br>For <em>Pickleball</em></h1>
+    <p class="hero-sub">Premium courts, easy online booking, and a community that loves the game.
+       Open daily <strong id="heroHours">8:00 AM – 10:00 PM</strong>.</p>
+    <div class="hero-cta">
+      <a class="btn primary big" href="book.html">Book a Court →</a>
+      <a class="btn ghost big" href="pricing.html">View Pricing</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUICK STATS ============ -->
+<section class="band">
+  <div class="page-wrap stat-band" id="statBand">
+    <div class="stat"><div class="stat-num" id="stCourts">3</div><div class="stat-label">Courts</div></div>
+    <div class="stat"><div class="stat-num">14</div><div class="stat-label">Hours open daily</div></div>
+    <div class="stat"><div class="stat-num" id="stRate">₱200</div><div class="stat-label">Per hour</div></div>
+    <div class="stat"><div class="stat-num">7 days</div><div class="stat-label">A week</div></div>
+  </div>
+</section>
+
+<!-- ============ COURT GALLERY ============ -->
+<section class="page-wrap section" id="gallery">
+  <h2 class="section-title neon">Inside The Yard</h2>
+  <div class="home-gallery" id="homeGallery"></div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="page-wrap section">
+  <h2 class="section-title neon">Why Play At J's?</h2>
+  <div class="feature-grid">
+    <div class="card feature"><span class="f-ico">🎾</span><h3>Tournament-Grade Courts</h3><p class="muted">Professional surfacing, regulation nets, and bright night lighting for evening games.</p></div>
+    <div class="card feature"><span class="f-ico">📅</span><h3>Real-Time Booking</h3><p class="muted">See live availability, reserve in seconds, and get instant confirmation with a booking reference.</p></div>
+    <div class="card feature"><span class="f-ico">🏓</span><h3>Gear Rentals</h3><p class="muted">No paddle? Rent one for ₱50/hour at checkout — balls are on the house.</p></div>
+    <div class="card feature"><span class="f-ico">💸</span><h3>Multi-Hour Discounts</h3><p class="muted">Play longer for less — every hour after your first two is ₱50 off.</p></div>
+    <div class="card feature"><span class="f-ico">🚿</span><h3>Player Amenities</h3><p class="muted">Free parking, showers, lockers, and a chill lounge for between-game recovery.</p></div>
+    <div class="card feature"><span class="f-ico">🤝</span><h3>Open Play &amp; Events</h3><p class="muted">Weekly open-play nights, beginner clinics, and monthly tournaments for all levels.</p></div>
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="band">
+  <div class="page-wrap section">
+    <h2 class="section-title neon">Booking In 3 Easy Steps</h2>
+    <div class="steps">
+      <div class="step"><span class="step-num">1</span><h3>Create an account</h3><p class="muted">Register with your email and verify it — takes under a minute.</p></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><span class="step-num">2</span><h3>Pick your slot</h3><p class="muted">Choose a court, date, and time from the live availability calendar.</p></div>
+      <div class="step-arrow">→</div>
+      <div class="step"><span class="step-num">3</span><h3>Pay &amp; play</h3><p class="muted">Pay by GCash, card, or at the venue. Show your booking reference and hit the court!</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PRICING PREVIEW ============ -->
+<section class="page-wrap section">
+  <h2 class="section-title neon">Simple, Honest Pricing</h2>
+  <div class="price-grid">
+    <div class="card price-card featured">
+      <div class="price-icon">🎾</div><h3>Court Rate</h3>
+      <div class="big-price"><span id="ppBase">₱200</span><span class="per">/ hour</span></div>
+      <p class="muted small">Per court, minimum 1 hour</p>
+    </div>
+    <div class="card price-card">
+      <div class="price-icon">⏱</div><h3>Extra Hours</h3>
+      <div class="big-price"><span id="ppExtra">₱150</span><span class="per">/ hour</span></div>
+      <p class="muted small">₱50 off every hour after your first 2</p>
+    </div>
+    <div class="card price-card">
+      <div class="price-icon">🏓</div><h3>Paddle Rental</h3>
+      <div class="big-price"><span id="ppPaddle">₱50</span><span class="per">/ paddle / hr</span></div>
+      <p class="muted small">Balls included, free of charge</p>
+    </div>
+  </div>
+  <p class="center" style="margin-top:1rem"><a class="link" href="pricing.html">See full pricing &amp; sample computations →</a></p>
+</section>
+
+<!-- ============ LOCATION / MAP ============ -->
+<section class="page-wrap section" id="location">
+  <h2 class="section-title neon">Find The Yard</h2>
+  <div class="map-grid">
+    <div class="card">
+      <h3>📍 Location &amp; Hours</h3>
+      <ul class="contact-list">
+        <li><span class="c-ico">🏟</span><div><strong>J's Pickle Yard</strong><br><span class="muted" id="locAddress"></span></div></li>
+        <li><span class="c-ico">🕗</span><div><strong>Open daily</strong><br><span class="muted" id="locHours">8:00 AM – 10:00 PM</span></div></li>
+        <li><span class="c-ico">📞</span><div><strong id="locPhone"></strong><br><span class="muted">Call or Viber for group events</span></div></li>
+        <li><span class="c-ico">🅿️</span><div><strong>Getting here</strong><br><span class="muted" id="locNote"></span></div></li>
+      </ul>
+      <a class="btn primary" style="margin-top:.6rem" href="contacts.html">Contact Us</a>
+    </div>
+    <div class="card map-embed-card">
+      <iframe
+        title="J's Pickle Yard location map"
+        src="https://maps.google.com/maps?q=7.045760737335788,125.52425272530164&z=17&output=embed"
+        loading="lazy"
+        referrerpolicy="no-referrer-when-downgrade"
+        allowfullscreen></iframe>
+      <div class="map-pin-overlay">
+        <img src="Pickle Ball Logo.jpg" alt="J's Pickle Yard is here">
+        <span class="pin-label">The Yard is here!</span>
+        <span class="pin-tip">▼</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TESTIMONIALS / REVIEWS ============ -->
+<section class="band" id="reviews">
+  <div class="page-wrap section">
+    <h2 class="section-title neon">What Players Say</h2>
+    <div class="quote-grid" id="reviewsGrid"></div>
+    <div class="card review-card" id="reviewCard"></div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="page-wrap">
+  <div class="cta-band big-cta">
+    <div>
+      <strong class="neon">Ready to rally?</strong>
+      <p class="muted" style="margin-top:.2rem">Courts fill up fast on weekends — lock in your slot now.</p>
+    </div>
+    <a class="btn primary big" href="book.html">Book a Court →</a>
+  </div>
+</section>
+
+<div id="siteFooter"></div>
+
+<script src="js/db.js"></script>
+<script src="js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  Shell.guard({ requireAuth: false });          // landing is public
+  Shell.renderHeader();
+  Shell.renderFooter();
+  const s = DB.data.settings;
+  const money = (n) => s.currency + Number(n).toLocaleString();
+  const hrs = `${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`;
+  document.getElementById("heroHours").textContent = hrs;
+  document.getElementById("locHours").textContent = hrs;
+  const c = DB.data.contact;
+  document.getElementById("locAddress").textContent = c.address;
+  document.getElementById("locPhone").textContent = c.phone;
+  document.getElementById("locNote").textContent = c.note;
+  document.getElementById("stCourts").textContent = DB.data.courts.filter((c) => c.active).length;
+  document.getElementById("stRate").textContent = money(s.pricePerHour);
+  document.getElementById("ppBase").textContent = money(s.pricePerHour);
+  document.getElementById("ppExtra").textContent = money(s.pricePerHour - s.discountPerHour);
+  document.getElementById("ppPaddle").textContent = money(s.paddleRentPerHour);
+
+  renderReviews();
+  renderReviewForm();
+  renderGallery();
+});
+
+/* ---- Court gallery: single-image slideshow with fade in/out.
+        Cycles through up to 10 photos (admin uploads or p1.jpg…p10.jpg);
+        missing files are skipped automatically. ---- */
+let slideSources = [], slideIdx = 0;
+
+function tryLoadImage(cands) {
+  return new Promise((resolve) => {
+    let k = 0;
+    const img = new Image();
+    img.onload = () => resolve(cands[k]);
+    img.onerror = () => { k++; if (k < cands.length) img.src = cands[k]; else resolve(null); };
+    img.src = cands[0];
+  });
+}
+
+async function resolveGallerySources() {
+  const out = [];
+  for (let i = 0; i < 10; i++) {
+    const ov = (DB.data.gallery || [])[i];
+    if (ov) { out.push(ov); continue; }
+    const n = i + 1;
+    const src = await tryLoadImage([`p${n}.jpg`, `p${n}.png`, `p${n}.jpeg`, `p${n}.webp`]);
+    if (src) out.push(src);
+  }
+  return out;
+}
+
+async function renderGallery() {
+  const wrap = document.getElementById("homeGallery");
+  slideSources = await resolveGallerySources();
+  if (!slideSources.length) slideSources = [GALLERY_PLACEHOLDER];
+  slideIdx = 0;
+
+  wrap.innerHTML = `
+    <div class="slideshow">
+      <img class="layer-front" src="${slideSources[0]}" alt="J's Pickle Yard court photo">
+      <img class="layer-back" alt="" aria-hidden="true">
+      <div class="slide-dots">
+        ${slideSources.map((_, i) =>
+          `<button class="dot ${i === 0 ? "on" : ""}" data-dot="${i}" title="Photo ${i + 1}"></button>`).join("")}
+      </div>
+    </div>`;
+
+  wrap.querySelectorAll("[data-dot]").forEach((d) =>
+    d.addEventListener("click", () => goToSlide(Number(d.dataset.dot))));
+
+  if (slideSources.length > 1 &&
+      !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    setInterval(() => goToSlide((slideIdx + 1) % slideSources.length), 5000);
+  }
+}
+
+function goToSlide(n) {
+  if (n === slideIdx) return;
+  const front = document.querySelector("#homeGallery .layer-front");
+  const back = document.querySelector("#homeGallery .layer-back");
+  if (!front || !back) return;
+  slideIdx = n;
+  back.onload = () => {
+    requestAnimationFrame(() => back.classList.add("show"));  // fade the new photo in
+    setTimeout(() => {
+      front.src = back.src;            // promote it to the base layer
+      back.classList.remove("show");   // fades out over an identical image — invisible
+    }, 1300);
+  };
+  back.src = slideSources[n];
+  document.querySelectorAll("#homeGallery .dot").forEach((d, i) =>
+    d.classList.toggle("on", i === n));
+}
+
+/* ---- Player reviews ---- */
+// Shown only until real player reviews come in
+const SAMPLE_REVIEWS = [
+  { name: "Migs R., 4.0 player", rating: 5, text: "Booking takes literally 30 seconds. Best-maintained courts in the city — the night lighting is perfect." },
+  { name: "Kat D., weekend warrior", rating: 5, text: "We book 3 hours every Saturday and the multi-hour discount really adds up. The open-play nights got my whole barkada hooked!" },
+  { name: "Paolo S., newbie no more", rating: 4, text: "Started as a total beginner at their clinic. Six months later I'm joining the monthly tournament. This place is a community." },
+];
+
+function stars(n) {
+  return `<span class="stars-show" aria-label="${n} out of 5 stars">${"★".repeat(n)}${"☆".repeat(5 - n)}</span>`;
+}
+
+function renderReviews() {
+  const grid = document.getElementById("reviewsGrid");
+  const published = (DB.data.reviews || [])
+    .filter((r) => r.status === "published")
+    .sort((a, b) => b.at - a.at);
+  const list = published.length ? published.slice(0, 6) : SAMPLE_REVIEWS;
+  grid.innerHTML = list.map((r) => `
+    <div class="card quote">
+      ${stars(r.rating)}
+      <p>"${escapeHtml(r.text)}"</p>
+      <span class="q-who">— ${escapeHtml(r.name)}</span>
+    </div>`).join("");
+}
+
+let pickedRating = 5;
+function renderReviewForm() {
+  const card = document.getElementById("reviewCard");
+
+  if (!Shell.user) {
+    card.innerHTML = `
+      <p class="center muted">Played at the Yard? We'd love to hear from you.</p>
+      <p class="center" style="margin-top:.6rem"><a class="btn primary" href="login.html">Sign in to leave a review</a></p>`;
+    return;
+  }
+
+  const mine = (DB.data.reviews || []).find((r) => r.userId === Shell.user.id);
+  if (mine) pickedRating = mine.rating;
+
+  card.innerHTML = `
+    <h3 class="center">${mine ? "Edit your review" : "Leave a review"}</h3>
+    <div class="star-picker center" id="starPicker">
+      ${[1, 2, 3, 4, 5].map((n) =>
+        `<button type="button" class="star-btn ${n <= pickedRating ? "on" : ""}" data-star="${n}">★</button>`).join("")}
+    </div>
+    <form id="reviewForm">
+      <label>Your comment
+        <textarea id="reviewText" rows="3" maxlength="300" required
+          placeholder="How was your game at J's Pickle Yard?">${mine ? escapeHtml(mine.text) : ""}</textarea>
+      </label>
+      <div class="center">
+        <button class="btn primary" type="submit">${mine ? "Update Review" : "Post Review"}</button>
+      </div>
+    </form>`;
+
+  document.querySelectorAll(".star-btn").forEach((b) =>
+    b.addEventListener("click", () => {
+      pickedRating = Number(b.dataset.star);
+      document.querySelectorAll(".star-btn").forEach((x) =>
+        x.classList.toggle("on", Number(x.dataset.star) <= pickedRating));
+    }));
+
+  document.getElementById("reviewForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const text = document.getElementById("reviewText").value.trim();
+    if (!text) return;
+    const existing = (DB.data.reviews || []).find((r) => r.userId === Shell.user.id);
+    if (existing) {
+      existing.rating = pickedRating;
+      existing.text = text;
+      existing.at = Date.now();
+      existing.status = "published";
+    } else {
+      DB.data.reviews.push({
+        id: DB.nextId("r"),
+        userId: Shell.user.id,
+        name: Shell.user.name,
+        rating: pickedRating,
+        text,
+        at: Date.now(),
+        status: "published",
+      });
+      DB.notifyAdmins(`⭐ New ${pickedRating}-star review from ${Shell.user.name}.`);
+    }
+    DB.save();
+    toast("Thanks for your review! 🎉", "success");
+    renderReviews();
+    renderReviewForm();
+  });
+}
+</script>
+</body>
+</html>

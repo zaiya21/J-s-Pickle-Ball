@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0a10">
+<title>My Bookings — J's Pickle Yard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="mybookings">
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="siteHeader"></div>
+
+<main class="page-wrap">
+  <div class="page-head">
+    <h1>My Bookings</h1>
+    <p class="muted">Cancellations are allowed up to <strong id="cancelPolicyLabel">2 hours</strong> before your start time.</p>
+  </div>
+
+  <div class="tab-row">
+    <button class="tab active" data-btab="upcoming">Upcoming</button>
+    <button class="tab" data-btab="history">Booking History</button>
+  </div>
+
+  <div id="myBookingsList" class="booking-list"></div>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="js/db.js"></script>
+<script src="js/shell.js"></script>
+<script src="js/mybookings.js"></script>
+</body>
+</html>

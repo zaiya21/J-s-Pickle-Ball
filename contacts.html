@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0c0a10">
+<title>Contacts — J's Pickle Yard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="contacts">
+
+<div id="toastWrap" class="toast-wrap"></div>
+<div id="siteHeader"></div>
+
+<main class="page-wrap">
+  <div class="page-head">
+    <h1>Contact Us</h1>
+    <p class="muted">Questions, group events, or tournament inquiries — reach out anytime.</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3>Get in touch</h3>
+      <ul class="contact-list">
+        <li><span class="c-ico">📍</span><div><strong>Address</strong><br><span class="muted" id="cAddress"></span></div></li>
+        <li><span class="c-ico">📞</span><div><strong>Phone / Viber</strong><br><span class="muted" id="cPhone"></span></div></li>
+        <li><span class="c-ico">✉️</span><div><strong>Email</strong><br><span class="muted" id="cEmail"></span></div></li>
+        <li><span class="c-ico">🕗</span><div><strong>Operating hours</strong><br><span class="muted">Daily, <span id="cHours">8:00 AM – 10:00 PM</span></span></div></li>
+        <li><span class="c-ico">📱</span><div><strong>Socials</strong><br><span class="muted" id="cSocials"></span></div></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Send us a message</h3>
+      <form id="contactForm">
+        <label>Your name
+          <input type="text" id="cfName" required maxlength="60" placeholder="Juan Dela Cruz">
+        </label>
+        <label>Email
+          <input type="email" id="cfEmail" required placeholder="you@example.com">
+        </label>
+        <label>Message
+          <textarea id="cfMsg" required rows="5" maxlength="1000" placeholder="How can we help?"></textarea>
+        </label>
+        <button class="btn primary" type="submit">Send Message</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="card map-embed-card map-card">
+    <iframe
+      title="J's Pickle Yard location map"
+      src="https://maps.google.com/maps?q=7.045760737335788,125.52425272530164&z=17&output=embed"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      allowfullscreen></iframe>
+    <div class="map-pin-overlay">
+      <img src="Pickle Ball Logo.jpg" alt="J's Pickle Yard is here">
+      <span class="pin-label">The Yard is here!</span>
+      <span class="pin-tip">▼</span>
+    </div>
+  </div>
+  <p class="muted small center" style="margin-top:.6rem" id="cNote"></p>
+</main>
+
+<div id="siteFooter"></div>
+
+<script src="js/db.js"></script>
+<script src="js/shell.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  Shell.guard({ requireAuth: false });          // contacts is public
+  Shell.renderHeader();
+  Shell.renderFooter();
+  const s = DB.data.settings;
+  const c = DB.data.contact;
+  document.getElementById("cHours").textContent = `${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`;
+  document.getElementById("cAddress").textContent = c.address;
+  document.getElementById("cPhone").textContent = c.phone;
+  document.getElementById("cEmail").textContent = c.email;
+  document.getElementById("cSocials").textContent = c.socials;
+  document.getElementById("cNote").textContent = c.note;
+
+  document.getElementById("contactForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.getElementById("cfName").value.trim();
+    const msg = document.getElementById("cfMsg").value.trim();
+    // Delivered to the admin's in-app notifications (no mail server in this demo)
+    DB.notifyAdmins(`📨 Message from ${name} (${document.getElementById("cfEmail").value.trim()}): "${msg.slice(0, 200)}"`);
+    e.target.reset();
+    toast("Message sent! We'll get back to you soon.", "success");
+  });
+});
+</script>
+</body>
+</html>
