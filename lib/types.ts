@@ -78,7 +78,9 @@ export interface EventRec {
   id: string;
   title: string;
   date: string;
-  time: string;
+  time: string; // legacy free-text schedule (kept for old events)
+  startTime: string; // "HH:MM" or "HH:MM:SS" (24h), optional
+  endTime: string;
   desc: string;
   photos: string[];
   createdAt: number;

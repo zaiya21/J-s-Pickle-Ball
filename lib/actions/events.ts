@@ -8,6 +8,8 @@ export interface EventInput {
   title: string;
   date: string;
   time: string;
+  startTime: string;
+  endTime: string;
   desc: string;
   photos: string[]; // already-uploaded storage URLs
 }
@@ -20,7 +22,15 @@ export async function saveEvent(input: EventInput): Promise<ActionResult> {
   const desc = input.desc.trim();
   if (!title || !input.date || !desc) return { ok: false, error: "Title, date, and details are required." };
 
-  const row = { title, date: input.date, time: input.time.trim(), description: desc, photos: input.photos };
+  const row = {
+    title,
+    date: input.date,
+    time: input.time.trim(),
+    start_time: input.startTime || null,
+    end_time: input.endTime || null,
+    description: desc,
+    photos: input.photos,
+  };
 
   if (input.id) {
     const { error } = await supabase.from("events").update(row).eq("id", input.id);

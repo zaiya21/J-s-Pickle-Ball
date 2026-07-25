@@ -103,6 +103,8 @@ export async function getEvents(): Promise<EventRec[]> {
     title: e.title,
     date: e.date,
     time: e.time ?? "",
+    startTime: e.start_time ?? "",
+    endTime: e.end_time ?? "",
     desc: e.description,
     photos: e.photos ?? [],
     createdAt: new Date(e.created_at).getTime(),

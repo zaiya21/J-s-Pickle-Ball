@@ -892,6 +892,16 @@ body::after {
 }
 .news-badge.live { background: linear-gradient(135deg, #7c3aed, #a855f7); box-shadow: 0 0 18px rgba(168, 85, 247, .65); }
 .news-badge.done { background: rgba(0, 0, 0, .55); border: 1px solid rgba(255, 255, 255, .28); }
+.news-badge.happening {
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  animation: news-pulse 1.6s ease-in-out infinite;
+}
+@keyframes news-pulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, .5); }
+  50% { box-shadow: 0 0 22px rgba(239, 68, 68, .95); }
+}
+/* a live event's card gets a subtle red glow to stand out */
+.news-card:has(.news-badge.happening) { border-color: #ef4444; box-shadow: 0 0 26px rgba(239, 68, 68, .28); }
 .news-admin .mini-btn { background: rgba(12, 10, 16, .72); backdrop-filter: blur(4px); }
 
 .news-body { padding: 1rem 1.15rem 1.2rem; display: flex; flex-direction: column; gap: .5rem; }

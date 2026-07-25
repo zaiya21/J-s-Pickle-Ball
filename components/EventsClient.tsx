@@ -2,15 +2,49 @@
 /* Tournaments & Events — ported from events.html/js/events.js, rewired to
    Supabase. Events come from the server; admin create/edit/delete go through
    server actions; photos upload to the media bucket. */
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { saveEvent, deleteEvent } from "@/lib/actions/events";
-import { fmtDateLong, todayStr, compressImage } from "@/lib/helpers";
+import { fmtDateLong, manilaTodayStr, compressImage } from "@/lib/helpers";
 import type { EventRec } from "@/lib/types";
 
 const MAX_PHOTOS = 5;
+
+type Status = "happening" | "upcoming" | "finished";
+
+/* "HH:MM[:SS]" (24h) → "h:mm AM/PM" for display. */
+function fmtClock(t: string): string {
+  if (!t) return "";
+  const [hh, mm] = t.split(":");
+  let h = parseInt(hh, 10);
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${mm} ${ampm}`;
+}
+
+/* Venue-time (Asia/Manila, +08:00) status of an event. */
+function eventStatus(ev: EventRec): Status {
+  const now = Date.now();
+  const mk = (t: string) => new Date(`${ev.date}T${t.length === 5 ? t + ":00" : t}+08:00`).getTime();
+  const start = ev.startTime ? mk(ev.startTime) : null;
+  const end = ev.endTime ? mk(ev.endTime) : null;
+  if (start != null && end != null) {
+    if (now < start) return "upcoming";
+    if (now > end) return "finished";
+    return "happening";
+  }
+  if (start != null) {
+    if (now < start) return "upcoming";
+    return now <= new Date(`${ev.date}T23:59:59+08:00`).getTime() ? "happening" : "finished";
+  }
+  const today = manilaTodayStr();
+  if (ev.date > today) return "upcoming";
+  if (ev.date < today) return "finished";
+  return "happening";
+}
 
 export default function EventsClient({ events, isAdmin }: { events: EventRec[]; isAdmin: boolean }) {
   const router = useRouter();
@@ -21,15 +55,24 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
   const [photos, setPhotos] = useState<string[]>([]);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
+  const [, setTick] = useState(0); // re-render each minute so status stays live
   const [lightbox, setLightbox] = useState<{ photos: string[]; idx: number; title: string } | null>(null);
   const formCard = useRef<HTMLDivElement>(null);
 
-  const today = todayStr();
-  const upcoming = events.filter((e) => e.date >= today).sort((a, b) => a.date.localeCompare(b.date));
-  const past = events.filter((e) => e.date < today).sort((a, b) => b.date.localeCompare(a.date));
+  useEffect(() => {
+    const t = setInterval(() => setTick((x) => x + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  const ranked = events.map((e) => ({ ev: e, status: eventStatus(e) }));
+  const key = (e: EventRec) => e.date + (e.startTime || "99:99");
+  const happening = ranked.filter((r) => r.status === "happening").sort((a, b) => key(a.ev).localeCompare(key(b.ev)));
+  const upcoming = ranked.filter((r) => r.status === "upcoming").sort((a, b) => key(a.ev).localeCompare(key(b.ev)));
+  const finished = ranked.filter((r) => r.status === "finished").sort((a, b) => key(b.ev).localeCompare(key(a.ev)));
 
   async function addPhotos(files: File[]) {
     const next = [...photos];
@@ -61,7 +104,8 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
     setPhotos([]);
     setTitle("");
     setDate("");
-    setTime("");
+    setStartTime("");
+    setEndTime("");
     setDesc("");
   }
 
@@ -70,15 +114,19 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
     setPhotos(ev.photos.slice());
     setTitle(ev.title);
     setDate(ev.date);
-    setTime(ev.time || "");
+    setStartTime(ev.startTime || "");
+    setEndTime(ev.endTime || "");
     setDesc(ev.desc);
     formCard.current?.scrollIntoView({ behavior: "smooth" });
   }
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
+    if (startTime && endTime && endTime <= startTime) {
+      return toast("End time must be after the start time.", "error");
+    }
     setBusy(true);
-    const res = await saveEvent({ id: editingId, title, date, time, desc, photos });
+    const res = await saveEvent({ id: editingId, title, date, time: "", startTime, endTime, desc, photos });
     setBusy(false);
     if (!res.ok) return toast(res.error || "Could not save event.", "error");
     toast(editingId ? "Event updated." : "Event posted!", "success");
@@ -96,11 +144,20 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
     router.refresh();
   }
 
-  function EventCard({ ev, isPast }: { ev: EventRec; isPast: boolean }) {
+  function EventCard({ ev, status }: { ev: EventRec; status: Status }) {
     const cover = ev.photos && ev.photos.length ? ev.photos[0] : null;
     const rest = ev.photos ? ev.photos.slice(1) : [];
+    const badge =
+      status === "happening"
+        ? { cls: "happening", label: "🔴 Happening now" }
+        : status === "upcoming"
+          ? { cls: "live", label: "Upcoming" }
+          : { cls: "done", label: "Finished" };
+    const timeLabel = ev.startTime
+      ? `${fmtClock(ev.startTime)}${ev.endTime ? " – " + fmtClock(ev.endTime) : ""}`
+      : ev.time || "";
     return (
-      <article className={`news-card ${isPast ? "past-event" : ""}`}>
+      <article className={`news-card ${status === "finished" ? "past-event" : ""}`}>
         <div
           className={`news-cover ${cover ? "" : "no-photo"}`}
           style={cover ? { backgroundImage: `url("${cover}")` } : undefined}
@@ -108,7 +165,7 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
         >
           {!cover && <span className="news-cover-ico">🏆</span>}
           <div className="news-cover-top">
-            <span className={`news-badge ${isPast ? "done" : "live"}`}>{isPast ? "Past event" : "Upcoming"}</span>
+            <span className={`news-badge ${badge.cls}`}>{badge.label}</span>
             {isAdmin && (
               <div className="news-admin row gap" onClick={(e) => e.stopPropagation()}>
                 <button className="mini-btn" onClick={() => startEdit(ev)}>Edit</button>
@@ -118,7 +175,7 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
           </div>
           <div className="news-cover-date">
             📅 {fmtDateLong(ev.date)}
-            {ev.time ? ` · 🕗 ${ev.time}` : ""}
+            {timeLabel ? ` · 🕗 ${timeLabel}` : ""}
           </div>
         </div>
         <div className="news-body">
@@ -163,10 +220,16 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
                 <input type="date" required value={date} onChange={(e) => setDate(e.target.value)} />
               </label>
             </div>
-            <label>
-              Time / schedule <span className="muted small">(optional)</span>
-              <input type="text" maxLength={60} placeholder="8:00 AM – 5:00 PM" value={time} onChange={(e) => setTime(e.target.value)} />
-            </label>
+            <div className="grid-2" style={{ marginBottom: 0 }}>
+              <label>
+                Start time <span className="muted small">(optional)</span>
+                <input type="time" step="1" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              </label>
+              <label>
+                End time <span className="muted small">(optional)</span>
+                <input type="time" step="1" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              </label>
+            </div>
             <label>
               Details
               <textarea rows={4} maxLength={1500} required placeholder="Format, divisions, entry fee, prizes, how to register…" value={desc} onChange={(e) => setDesc(e.target.value)} />
@@ -218,19 +281,27 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
           </div>
         ) : (
           <>
-            {upcoming.length > 0 && (
+            {happening.length > 0 && (
               <>
-                <div className="event-divider">Upcoming</div>
-                {upcoming.map((ev) => (
-                  <EventCard key={ev.id} ev={ev} isPast={false} />
+                <div className="event-divider">🔴 Happening now</div>
+                {happening.map((r) => (
+                  <EventCard key={r.ev.id} ev={r.ev} status={r.status} />
                 ))}
               </>
             )}
-            {past.length > 0 && (
+            {upcoming.length > 0 && (
+              <>
+                <div className="event-divider">Upcoming</div>
+                {upcoming.map((r) => (
+                  <EventCard key={r.ev.id} ev={r.ev} status={r.status} />
+                ))}
+              </>
+            )}
+            {finished.length > 0 && (
               <>
                 <div className="event-divider">Past events</div>
-                {past.map((ev) => (
-                  <EventCard key={ev.id} ev={ev} isPast={true} />
+                {finished.map((r) => (
+                  <EventCard key={r.ev.id} ev={r.ev} status={r.status} />
                 ))}
               </>
             )}
