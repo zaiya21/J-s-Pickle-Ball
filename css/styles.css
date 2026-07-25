@@ -31,7 +31,6 @@ body {
   color: var(--ink);
   min-height: 100vh;
   line-height: 1.5;
-  position: relative;
 }
 h1, h2, h3 { font-family: var(--font-display); letter-spacing: .5px; text-transform: uppercase; }
 h1 { font-size: 2.1rem; font-weight: 800; }
@@ -418,13 +417,9 @@ a.nav-link, a.user-chip, a.brand { text-decoration: none; color: inherit; }
 a.btn { text-decoration: none; display: inline-block; }
 
 /* ============ Logo watermark backdrop (Book, My Bookings, Pricing, Contacts) ============ */
-body[data-page="home"]::before,
-body[data-page="book"]::before,
-body[data-page="mybookings"]::before,
-body[data-page="pricing"]::before,
-body[data-page="events"]::before,
-body[data-page="contacts"]::before {
-  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+/* Logo watermark — present on every page, stays visible while scrolling */
+body::before {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
   background: url("../Pickle Ball Logo.jpg") center 58% / min(72vmin, 580px) no-repeat;
   opacity: .07;
   filter: saturate(1.2);
