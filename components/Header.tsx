@@ -40,7 +40,7 @@ export default function Header({ notifications = [] }: { notifications?: Notific
   const [menuOpen, setMenuOpen] = useState(false); // mobile hamburger menu
 
   // The auth pages render no header/footer (as login.html did).
-  if (pathname === "/login" || pathname === "/reset") return null;
+  if (pathname === "/login" || pathname === "/reset" || pathname === "/confirm") return null;
 
   const active = keyForPath(pathname);
   const nav = [...NAV];

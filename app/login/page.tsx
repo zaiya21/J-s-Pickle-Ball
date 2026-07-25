@@ -115,7 +115,7 @@ export default function LoginPage() {
           password: regPassword,
           options: {
             data: { name, phone: regPhone.trim() },
-            emailRedirectTo: `${location.origin}/auth/callback?next=/login`,
+            emailRedirectTo: `${location.origin}/confirm`,
           },
         }),
       ));

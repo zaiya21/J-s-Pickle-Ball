@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 
 export default function Footer() {
   const pathname = usePathname();
-  if (pathname === "/login" || pathname === "/reset") return null; // auth pages have no footer
+  if (pathname === "/login" || pathname === "/reset" || pathname === "/confirm") return null; // auth pages have no footer
   const year = new Date().getFullYear();
   return (
     <div id="siteFooter">
