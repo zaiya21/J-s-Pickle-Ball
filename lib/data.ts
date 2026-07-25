@@ -144,6 +144,9 @@ export async function getSiteConfig(): Promise<SiteConfig> {
     email: data.email ?? "",
     socials: data.socials ?? "",
     note: data.note ?? "",
+    mapLat: data.map_lat ?? DEFAULT_SITE_CONFIG.mapLat,
+    mapLng: data.map_lng ?? DEFAULT_SITE_CONFIG.mapLng,
+    landmarkImage: data.landmark_image ?? null,
   };
 }
 

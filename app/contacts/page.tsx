@@ -37,7 +37,7 @@ export default async function ContactsPage() {
       <div className="card map-embed-card map-card">
         <iframe
           title="J's Pickle Yard location map"
-          src="https://maps.google.com/maps?q=7.045760737335788,125.52425272530164&z=17&output=embed"
+          src={`https://maps.google.com/maps?q=${c.mapLat},${c.mapLng}&z=17&output=embed`}
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           allowFullScreen
@@ -49,6 +49,19 @@ export default async function ContactsPage() {
           <span className="pin-tip">▼</span>
         </div>
       </div>
+
+      {c.landmarkImage && (
+        <div className="card" style={{ marginTop: "1rem" }}>
+          <h3>📸 Landmark — what to look for</h3>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={c.landmarkImage}
+            alt="Landmark near J's Pickle Yard"
+            style={{ width: "100%", borderRadius: "10px", marginTop: ".6rem" }}
+          />
+        </div>
+      )}
+
       <p className="muted small center" style={{ marginTop: ".6rem" }}>
         {c.note}
       </p>

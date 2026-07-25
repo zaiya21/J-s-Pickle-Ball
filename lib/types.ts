@@ -103,6 +103,9 @@ export interface SiteConfig {
   email: string;
   socials: string;
   note: string;
+  mapLat: string;
+  mapLng: string;
+  landmarkImage: string | null;
 }
 
 export const DEFAULT_SITE_CONFIG: SiteConfig = {
@@ -115,6 +118,9 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   email: "hello@jspickleyard.com",
   socials: "Facebook · Instagram · TikTok — @jspickleyard",
   note: "Beside the main gym entrance — free parking for players.",
+  mapLat: "7.045760737335788",
+  mapLng: "125.52425272530164",
+  landmarkImage: null,
 };
 
 /* Matches DB.defaults().settings in js/db.js */

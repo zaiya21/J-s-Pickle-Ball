@@ -27,6 +27,7 @@ import {
   savePaymentNumbers,
   setPaymentQr,
   saveContact,
+  setLandmarkImage,
   setGallerySlot,
 } from "@/lib/actions/admin";
 import { toggleReviewStatus, deleteReview } from "@/lib/actions/reviews";
@@ -656,6 +657,8 @@ export default function AdminClient({ data }: { data: AdminData }) {
               email: String(fd.get("ciEmail") || ""),
               socials: String(fd.get("ciSocials") || ""),
               note: String(fd.get("ciNote") || ""),
+              mapLat: String(fd.get("ciLat") || ""),
+              mapLng: String(fd.get("ciLng") || ""),
             }), "Contact info saved — Contacts page and home page updated.");
           }}>
             <div className="grid-2" style={{ marginBottom: 0 }}>
@@ -665,8 +668,40 @@ export default function AdminClient({ data }: { data: AdminData }) {
               <label>Socials <input type="text" name="ciSocials" maxLength={120} defaultValue={p.socials} /></label>
             </div>
             <label>Directions / parking note <input type="text" name="ciNote" maxLength={160} defaultValue={p.note} /></label>
+            <h3 style={{ marginTop: "1rem" }}>Map location (exact coordinates)</h3>
+            <p className="muted small" style={{ marginBottom: ".6rem" }}>
+              In Google Maps, right-click your exact spot → click the latitude, longitude numbers at the top to copy them, then paste each below.
+            </p>
+            <div className="grid-2" style={{ marginBottom: 0 }}>
+              <label>Latitude <input type="text" name="ciLat" maxLength={30} placeholder="7.045760737335788" defaultValue={p.mapLat} /></label>
+              <label>Longitude <input type="text" name="ciLng" maxLength={30} placeholder="125.52425272530164" defaultValue={p.mapLng} /></label>
+            </div>
             <button className="btn primary" type="submit">Save Contact Info</button>
           </form>
+
+          <hr style={{ borderColor: "var(--border)", margin: "1.2rem 0" }} />
+          <h3>Landmark photo</h3>
+          <p className="muted small" style={{ marginBottom: ".9rem" }}>
+            An extra photo shown below the map on the Contacts page to help players spot the entrance/landmark.
+          </p>
+          <div className="gallery-admin">
+            <div className="gal-slot">
+              <ThumbImg key={`landmark-${p.landmarkImage ? "o" : "n"}`} override={p.landmarkImage} alt="Landmark photo" />
+              <span className="gal-label">Landmark {p.landmarkImage ? "· uploaded" : "· none"}</span>
+              <div className="row gap">
+                <label className="mini-btn" style={{ cursor: "pointer" }}>
+                  Change
+                  <input type="file" accept="image/*" hidden onChange={async (e) => {
+                    const u = await uploadTo("config/landmark.jpg", e.target.files?.[0]);
+                    if (u) run(setLandmarkImage(u), "Landmark photo updated.");
+                  }} />
+                </label>
+                {p.landmarkImage && (
+                  <button className="mini-btn danger" onClick={() => run(setLandmarkImage(null), "Landmark photo removed.")}>Remove</button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="card" style={{ gridColumn: "1/-1" }}>

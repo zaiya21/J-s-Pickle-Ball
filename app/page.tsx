@@ -145,7 +145,7 @@ export default async function HomePage() {
           <div className="card map-embed-card">
             <iframe
               title="J's Pickle Yard location map"
-              src="https://maps.google.com/maps?q=7.045760737335788,125.52425272530164&z=17&output=embed"
+              src={`https://maps.google.com/maps?q=${c.mapLat},${c.mapLng}&z=17&output=embed`}
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
               allowFullScreen

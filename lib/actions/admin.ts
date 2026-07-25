@@ -206,6 +206,8 @@ export async function saveContact(input: {
   email: string;
   socials: string;
   note: string;
+  mapLat: string;
+  mapLng: string;
 }): Promise<ActionResult> {
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
@@ -218,8 +220,18 @@ export async function saveContact(input: {
       email: input.email.trim(),
       socials: input.socials.trim(),
       note: input.note.trim(),
+      map_lat: input.mapLat.trim(),
+      map_lng: input.mapLng.trim(),
     })
     .eq("id", 1);
+  return error ? { ok: false, error: "Save failed." } : { ok: true };
+}
+
+export async function setLandmarkImage(url: string | null): Promise<ActionResult> {
+  const gate = await requireAdmin();
+  if (!gate.ok) return gate;
+  const supabase = createClient();
+  const { error } = await supabase.from("site_config").update({ landmark_image: url }).eq("id", 1);
   return error ? { ok: false, error: "Save failed." } : { ok: true };
 }
 
