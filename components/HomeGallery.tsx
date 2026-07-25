@@ -1,50 +1,14 @@
 "use client";
-/* Homepage "Inside The Yard" slideshow — ported from index.html's inline script.
-   Gallery slot overrides come from Supabase; empty slots fall back to p{n}.jpg. */
+/* Homepage "Inside The Yard" slideshow. The photo list is resolved on the
+   server and passed in, so the images are in the page from the first paint —
+   no client-side probing of non-existent files. This component only handles
+   the fade/auto-advance behaviour. */
 import { useEffect, useRef, useState } from "react";
-import { GALLERY_PLACEHOLDER } from "@/lib/helpers";
 
-function tryLoadImage(cands: string[]): Promise<string | null> {
-  return new Promise((resolve) => {
-    let k = 0;
-    const img = new Image();
-    img.onload = () => resolve(cands[k]);
-    img.onerror = () => {
-      k++;
-      if (k < cands.length) img.src = cands[k];
-      else resolve(null);
-    };
-    img.src = cands[0];
-  });
-}
-
-export default function HomeGallery({ slots }: { slots: (string | null)[] }) {
-  const [sources, setSources] = useState<string[]>([]);
+export default function HomeGallery({ sources }: { sources: string[] }) {
   const [idx, setIdx] = useState(0);
   const frontRef = useRef<HTMLImageElement>(null);
   const backRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      const out: string[] = [];
-      for (let i = 0; i < 10; i++) {
-        const ov = slots[i];
-        if (ov) {
-          out.push(ov);
-          continue;
-        }
-        const n = i + 1;
-        const src = await tryLoadImage([`/p${n}.jpg`, `/p${n}.png`, `/p${n}.jpeg`, `/p${n}.webp`]);
-        if (src) out.push(src);
-      }
-      if (!alive) return;
-      setSources(out.length ? out : [GALLERY_PLACEHOLDER]);
-    })();
-    return () => {
-      alive = false;
-    };
-  }, [slots]);
 
   useEffect(() => {
     if (sources.length > 1 && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {

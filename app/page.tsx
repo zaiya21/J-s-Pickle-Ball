@@ -4,8 +4,23 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { getActiveCourts, getSettings, getSiteConfig, getPublishedReviews, getMyReview, getGallery } from "@/lib/data";
-import { fmtHour, money } from "@/lib/helpers";
+import { fmtHour, money, GALLERY_PLACEHOLDER } from "@/lib/helpers";
 import HomeGallery from "@/components/HomeGallery";
+
+/* p1.jpg … p5.jpg ship in /public as the default court photos. */
+const DEFAULT_PHOTO_COUNT = 5;
+
+/* Resolve the slideshow's photo list on the server: admin override wins,
+   otherwise the shipped default photo, otherwise the slot is skipped. */
+function resolveGallerySources(overrides: (string | null)[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    const ov = overrides[i];
+    if (ov) out.push(ov);
+    else if (i < DEFAULT_PHOTO_COUNT) out.push(`/p${i + 1}.jpg`);
+  }
+  return out.length ? out : [GALLERY_PLACEHOLDER];
+}
 import ReviewForm from "@/components/ReviewForm";
 
 const SAMPLE_REVIEWS = [
@@ -69,7 +84,7 @@ export default async function HomePage() {
 
       <section className="page-wrap section">
         <h2 className="section-title neon">Inside The Yard</h2>
-        <HomeGallery slots={gallery} />
+        <HomeGallery sources={resolveGallerySources(gallery)} />
       </section>
 
       <section className="page-wrap section">
