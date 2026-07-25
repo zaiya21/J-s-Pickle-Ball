@@ -97,51 +97,56 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
   }
 
   function EventCard({ ev, isPast }: { ev: EventRec; isPast: boolean }) {
+    const cover = ev.photos && ev.photos.length ? ev.photos[0] : null;
+    const rest = ev.photos ? ev.photos.slice(1) : [];
     return (
-      <div className={`card event-card ${isPast ? "past-event" : ""}`}>
-        <div className="event-top">
-          <div>
-            <div className="event-title">{ev.title}</div>
-            <div className="event-when">
-              📅 {fmtDateLong(ev.date)}
-              {ev.time ? ` · 🕗 ${ev.time}` : ""}{" "}
-              {isPast ? (
-                <span className="badge completed" style={{ marginLeft: ".4rem" }}>done</span>
-              ) : (
-                <span className="badge confirmed" style={{ marginLeft: ".4rem" }}>upcoming</span>
-              )}
-            </div>
+      <article className={`news-card ${isPast ? "past-event" : ""}`}>
+        <div
+          className={`news-cover ${cover ? "" : "no-photo"}`}
+          style={cover ? { backgroundImage: `url("${cover}")` } : undefined}
+          onClick={cover ? () => setLightbox({ photos: ev.photos, idx: 0, title: ev.title }) : undefined}
+        >
+          {!cover && <span className="news-cover-ico">🏆</span>}
+          <div className="news-cover-top">
+            <span className={`news-badge ${isPast ? "done" : "live"}`}>{isPast ? "Past event" : "Upcoming"}</span>
+            {isAdmin && (
+              <div className="news-admin row gap" onClick={(e) => e.stopPropagation()}>
+                <button className="mini-btn" onClick={() => startEdit(ev)}>Edit</button>
+                <button className="mini-btn danger" onClick={() => remove(ev)}>Delete</button>
+              </div>
+            )}
           </div>
-          {isAdmin && (
-            <div className="row gap">
-              <button className="mini-btn" onClick={() => startEdit(ev)}>Edit</button>
-              <button className="mini-btn danger" onClick={() => remove(ev)}>Delete</button>
+          <div className="news-cover-date">
+            📅 {fmtDateLong(ev.date)}
+            {ev.time ? ` · 🕗 ${ev.time}` : ""}
+          </div>
+        </div>
+        <div className="news-body">
+          <h3 className="news-title">{ev.title}</h3>
+          <p className="news-desc">{ev.desc}</p>
+          {rest.length > 0 && (
+            <div className="news-thumbs">
+              {rest.map((p, i) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={p}
+                  alt={`${ev.title} photo ${i + 2}`}
+                  onClick={() => setLightbox({ photos: ev.photos, idx: i + 1, title: ev.title })}
+                />
+              ))}
             </div>
           )}
         </div>
-        <p className="event-desc">{ev.desc}</p>
-        {ev.photos && ev.photos.length > 0 && (
-          <div className="event-photos">
-            {ev.photos.map((p, i) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={i}
-                src={p}
-                alt={`${ev.title} photo ${i + 1}`}
-                onClick={() => setLightbox({ photos: ev.photos, idx: i, title: ev.title })}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      </article>
     );
   }
 
   return (
     <main className="page-wrap">
       <div className="page-head">
-        <h1>Tournaments &amp; Events</h1>
-        <p className="muted">Open plays, clinics, and monthly tournaments at the Yard — check what&apos;s coming up.</p>
+        <h1>Events &amp; News</h1>
+        <p className="muted">Tournaments, open-play nights, clinics, and the latest from the Yard — here&apos;s what&apos;s happening.</p>
       </div>
 
       {isAdmin && (
