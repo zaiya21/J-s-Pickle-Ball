@@ -158,7 +158,7 @@ export default function LoginPage() {
     }
     setBusy(false);
     // Never reveal whether the email exists (matches old Auth.forgot behavior).
-    toast("If an account exists for that email, a reset link is on its way.", "success");
+    toast("If an account exists for that email, a reset link is on its way — check your inbox and spam folder.", "success");
     setPanel("login");
     setLoginEmail(email);
   }
@@ -335,6 +335,9 @@ export default function LoginPage() {
             We sent a confirmation link to <strong>{pendingEmail}</strong>. Click it to activate your account, then sign
             in.
           </p>
+          <p className="muted small" style={{ marginTop: ".2rem" }}>
+            📩 Don&apos;t see it? Check your <strong>spam / junk folder</strong> — it can take a minute to arrive.
+          </p>
           <button className="btn primary block" type="button" onClick={() => setPanel("login")}>
             Back to Sign In
           </button>
@@ -356,7 +359,10 @@ export default function LoginPage() {
         {/* Forgot password */}
         <form className={`auth-panel ${show("forgot")}`} onSubmit={onForgot}>
           <h2>Reset password</h2>
-          <p className="muted">Enter your account email and we&apos;ll send a reset link.</p>
+          <p className="muted">
+            Enter your account email and we&apos;ll send a reset link. 📩 Check your <strong>inbox and spam / junk
+            folder</strong> after you submit.
+          </p>
           <label>
             Email
             <input
