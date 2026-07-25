@@ -31,6 +31,7 @@ body {
   color: var(--ink);
   min-height: 100vh;
   line-height: 1.5;
+  position: relative;
 }
 h1, h2, h3 { font-family: var(--font-display); letter-spacing: .5px; text-transform: uppercase; }
 h1 { font-size: 2.1rem; font-weight: 800; }
@@ -423,7 +424,7 @@ body[data-page="mybookings"]::before,
 body[data-page="pricing"]::before,
 body[data-page="events"]::before,
 body[data-page="contacts"]::before {
-  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
   background: url("../Pickle Ball Logo.jpg") center 58% / min(72vmin, 580px) no-repeat;
   opacity: .07;
   filter: saturate(1.2);
@@ -561,7 +562,7 @@ body[data-page="contacts"] .page-head h1 {
 .event-card.past-event { opacity: .6; }
 .event-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .6rem; margin-top: .9rem; }
 .event-photos img {
-  width: 100%; height: 220px; object-fit: cover; border-radius: 8px;
+  width: 100%; height: 170px; object-fit: cover; border-radius: 8px;
   border: 1px solid var(--border); cursor: zoom-in; transition: .15s;
 }
 .event-photos img:hover { border-color: var(--purple); transform: scale(1.02); }
