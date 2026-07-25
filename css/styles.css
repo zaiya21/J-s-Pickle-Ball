@@ -428,11 +428,7 @@ body::before {
 
 /* ============ Neon glow headings ============ */
 .neon,
-body[data-page="book"] .page-head h1,
-body[data-page="mybookings"] .page-head h1,
-body[data-page="pricing"] .page-head h1,
-body[data-page="events"] .page-head h1,
-body[data-page="contacts"] .page-head h1 {
+.page-head h1 {
   color: #fff;
   text-shadow:
     0 0 6px rgba(168, 85, 247, .95),
