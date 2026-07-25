@@ -132,7 +132,7 @@ export default function LoginPage() {
     const email = forgotEmail.trim().toLowerCase();
     setBusy(true);
     await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/auth/callback?next=/reset`,
+      redirectTo: `${location.origin}/reset`,
     });
     setBusy(false);
     // Never reveal whether the email exists (matches old Auth.forgot behavior).
