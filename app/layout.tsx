@@ -6,6 +6,7 @@ import { SessionProvider, type ClientUser } from "@/components/session";
 import { ToastProvider } from "@/components/toast";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import AuthRecoveryGuard from "@/components/AuthRecoveryGuard";
 
 export const metadata: Metadata = {
   title: "J's Pickle Yard — Play • Connect • Compete",
@@ -43,6 +44,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <SessionProvider user={user}>
           <ToastProvider>
+            <AuthRecoveryGuard />
             <Header notifications={notifications} />
             {children}
             <Footer />
