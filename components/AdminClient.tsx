@@ -586,8 +586,9 @@ export default function AdminClient({ data }: { data: AdminData }) {
 
         <div className="card">
           <h3>Pricing (₱)</h3>
-          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(savePricing(Number(fd.get("sPrice")), Number(fd.get("sAfter")), Number(fd.get("sDisc")), Number(fd.get("sPaddle"))), "Pricing saved — the Pricing page updates automatically."); }}>
-            <label>Court rate per hour <input type="number" name="sPrice" min={0} step={10} defaultValue={s.pricePerHour} /></label>
+          <form onSubmit={(e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); run(savePricing(Number(fd.get("sPrice")), Number(fd.get("sWeekend")), Number(fd.get("sAfter")), Number(fd.get("sDisc")), Number(fd.get("sPaddle"))), "Pricing saved — the Pricing page updates automatically."); }}>
+            <label>Weekday rate per hour (Mon–Fri) <input type="number" name="sPrice" min={0} step={10} defaultValue={s.pricePerHour} /></label>
+            <label>Weekend rate per hour (Sat–Sun) <input type="number" name="sWeekend" min={0} step={10} defaultValue={s.weekendPricePerHour} /></label>
             <label>Full-rate hours before discount <input type="number" name="sAfter" min={1} max={8} defaultValue={s.discountAfterHours} /></label>
             <label>Discount per extra hour <input type="number" name="sDisc" min={0} step={10} defaultValue={s.discountPerHour} /></label>
             <label>Paddle rental (per paddle / hour) <input type="number" name="sPaddle" min={0} step={10} defaultValue={s.paddleRentPerHour} /></label>

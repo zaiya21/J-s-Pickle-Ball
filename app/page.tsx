@@ -103,14 +103,15 @@ export default async function HomePage() {
           <div className="card price-card featured">
             <div className="price-icon">🎾</div>
             <h3>Court Rate</h3>
-            <div className="big-price"><span>{m(s.pricePerHour)}</span><span className="per">/ hour</span></div>
+            <div className="big-price"><span>{m(s.pricePerHour)}</span><span className="per">/ hr · weekday</span></div>
+            <div className="big-price"><span>{m(s.weekendPricePerHour)}</span><span className="per">/ hr · weekend</span></div>
             <p className="muted small">Per court, minimum 1 hour</p>
           </div>
           <div className="card price-card">
             <div className="price-icon">⏱</div>
-            <h3>Extra Hours</h3>
-            <div className="big-price"><span>{m(s.pricePerHour - s.discountPerHour)}</span><span className="per">/ hour</span></div>
-            <p className="muted small">₱50 off every hour after your first 2</p>
+            <h3>Multi-Hour Discount</h3>
+            <div className="big-price"><span>{m(s.discountPerHour)}</span><span className="per">/ hour off</span></div>
+            <p className="muted small">{m(s.discountPerHour)} off every hour after your first {s.discountAfterHours}</p>
           </div>
           <div className="card price-card">
             <div className="price-icon">🏓</div>

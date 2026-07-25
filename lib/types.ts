@@ -5,7 +5,8 @@ export type Role = "user" | "admin";
 export interface Settings {
   openHour: number;
   closeHour: number;
-  pricePerHour: number;
+  pricePerHour: number; // weekday rate (Mon–Fri)
+  weekendPricePerHour: number; // weekend rate (Sat–Sun)
   discountAfterHours: number;
   discountPerHour: number;
   paddleRentPerHour: number;
@@ -121,6 +122,7 @@ export const DEFAULT_SETTINGS: Settings = {
   openHour: 8,
   closeHour: 22,
   pricePerHour: 200,
+  weekendPricePerHour: 250,
   discountAfterHours: 2,
   discountPerHour: 50,
   paddleRentPerHour: 50,

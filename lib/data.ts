@@ -22,6 +22,8 @@ export async function getSettings(): Promise<Settings> {
     openHour: data.open_hour,
     closeHour: data.close_hour,
     pricePerHour: data.price_per_hour,
+    // Falls back to the weekday rate if the weekend column isn't added yet.
+    weekendPricePerHour: data.weekend_price_per_hour ?? data.price_per_hour,
     discountAfterHours: data.discount_after_hours,
     discountPerHour: data.discount_per_hour,
     paddleRentPerHour: data.paddle_rent_per_hour,

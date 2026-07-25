@@ -10,19 +10,11 @@ export default async function PricingPage() {
   const [s, user] = await Promise.all([getSettings(), getCurrentUser()]);
   const m = (n: number) => money(s, n);
 
-  const rows = [1, 2, 3, 4].map((h) => {
-    const full = Math.min(h, s.discountAfterHours);
-    const extra = Math.max(0, h - s.discountAfterHours);
-    let calc = `${full} hr × ${m(s.pricePerHour)}`;
-    if (extra) calc += ` + ${extra} hr × ${m(s.pricePerHour - s.discountPerHour)}`;
-    return { h, calc, total: calcCourtCost(s, h) };
-  });
-
   return (
     <main className="page-wrap">
       <div className="page-head">
         <h1>Pricing</h1>
-        <p className="muted">Simple hourly rates, per court. The longer you play, the cheaper it gets.</p>
+        <p className="muted">Simple hourly rates, per court — weekday and weekend. The longer you play, the cheaper it gets.</p>
       </div>
 
       <div className="price-grid">
@@ -31,11 +23,14 @@ export default async function PricingPage() {
           <h3>Court Rate</h3>
           <div className="big-price">
             <span>{m(s.pricePerHour)}</span>
-            <span className="per">/ hour</span>
+            <span className="per">/ hr · weekday</span>
+          </div>
+          <div className="big-price">
+            <span>{m(s.weekendPricePerHour)}</span>
+            <span className="per">/ hr · weekend</span>
           </div>
           <p className="muted small">
-            Per court · minimum booking of 1 hour · open daily{" "}
-            <span>{`${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`}</span>
+            Per court · Mon–Fri vs Sat–Sun · minimum 1 hour · open daily {`${fmtHour(s.openHour)} – ${fmtHour(s.closeHour)}`}
           </p>
         </div>
 
@@ -43,11 +38,11 @@ export default async function PricingPage() {
           <div className="price-icon">⏱</div>
           <h3>Multi-Hour Discount</h3>
           <div className="big-price">
-            <span>{m(s.pricePerHour - s.discountPerHour)}</span>
-            <span className="per">/ hour</span>
+            <span>{m(s.discountPerHour)}</span>
+            <span className="per">/ hour off</span>
           </div>
           <p className="muted small">
-            Book more than <span>{s.discountAfterHours}</span> hours and every extra hour gets <span>{m(s.discountPerHour)}</span> off.
+            Book more than <span>{s.discountAfterHours}</span> hours and every extra hour is <span>{m(s.discountPerHour)}</span> off the base rate — on both weekday and weekend prices.
           </p>
         </div>
 
@@ -69,19 +64,21 @@ export default async function PricingPage() {
             <thead>
               <tr>
                 <th>Session</th>
-                <th>Computation</th>
-                <th>Court total</th>
+                <th>Weekday total</th>
+                <th>Weekend total</th>
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.h}>
+              {[1, 2, 3, 4].map((h) => (
+                <tr key={h}>
                   <td>
-                    {r.h} hour{r.h > 1 ? "s" : ""}
+                    {h} hour{h > 1 ? "s" : ""}
                   </td>
-                  <td>{r.calc}</td>
                   <td>
-                    <strong className="price">{m(r.total)}</strong>
+                    <strong className="price">{m(calcCourtCost(s, h, false))}</strong>
+                  </td>
+                  <td>
+                    <strong className="price">{m(calcCourtCost(s, h, true))}</strong>
                   </td>
                 </tr>
               ))}
@@ -89,7 +86,7 @@ export default async function PricingPage() {
           </table>
         </div>
         <p className="muted small" style={{ marginTop: ".7rem" }}>
-          Cancellation is free up to <span>{s.cancelHours}</span> hours before your start time — paid bookings are refunded (simulated).
+          The multi-hour discount ({m(s.discountPerHour)}/hr off) kicks in after {s.discountAfterHours} hours. Weekends are Saturday &amp; Sunday. Cancellation is free up to <span>{s.cancelHours}</span> hours before your start time — paid bookings are refunded (simulated).
         </p>
       </div>
 

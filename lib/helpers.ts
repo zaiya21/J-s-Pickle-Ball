@@ -46,18 +46,30 @@ export function money(settings: Settings, n: number): string {
 // alias matching js/db.js name
 export const fmtMoney = money;
 
-export function calcCourtCost(settings: Settings, hours: number): number {
+/* Weekend = Saturday or Sunday, from a YYYY-MM-DD string. */
+export function isWeekend(dateStr: string): boolean {
+  const d = new Date(dateStr + "T00:00:00").getDay();
+  return d === 0 || d === 6;
+}
+
+/* The applicable per-hour base rate for the day (weekday vs weekend). */
+export function baseRate(settings: Settings, weekend: boolean): number {
+  return weekend ? settings.weekendPricePerHour : settings.pricePerHour;
+}
+
+export function calcCourtCost(settings: Settings, hours: number, weekend = false): number {
+  const rate = baseRate(settings, weekend);
   const full = Math.min(hours, settings.discountAfterHours);
   const extra = Math.max(0, hours - settings.discountAfterHours);
-  return full * settings.pricePerHour + extra * (settings.pricePerHour - settings.discountPerHour);
+  return full * rate + extra * (rate - settings.discountPerHour);
 }
 
 export function calcPaddleCost(settings: Settings, paddles: number, hours: number): number {
   return paddles * settings.paddleRentPerHour * hours;
 }
 
-export function calcTotal(settings: Settings, hours: number, paddles: number): number {
-  return calcCourtCost(settings, hours) + calcPaddleCost(settings, paddles || 0, hours);
+export function calcTotal(settings: Settings, hours: number, paddles: number, weekend = false): number {
+  return calcCourtCost(settings, hours, weekend) + calcPaddleCost(settings, paddles || 0, hours);
 }
 
 /* ---- misc ---- */

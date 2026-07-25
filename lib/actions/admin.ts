@@ -146,15 +146,23 @@ export async function saveHours(open: number, close: number): Promise<ActionResu
   return error ? { ok: false, error: "Save failed." } : { ok: true };
 }
 
-export async function savePricing(price: number, after: number, disc: number, paddle: number): Promise<ActionResult> {
+export async function savePricing(
+  price: number,
+  weekendPrice: number,
+  after: number,
+  disc: number,
+  paddle: number,
+): Promise<ActionResult> {
   const gate = await requireAdmin();
   if (!gate.ok) return gate;
-  if (disc > price) return { ok: false, error: "Discount cannot exceed the hourly rate." };
+  if (disc > price || disc > weekendPrice)
+    return { ok: false, error: "Discount cannot exceed the hourly rate." };
   const supabase = createClient();
   const { error } = await supabase
     .from("settings")
     .update({
       price_per_hour: price,
+      weekend_price_per_hour: weekendPrice,
       discount_after_hours: Math.max(1, after),
       discount_per_hour: disc,
       paddle_rent_per_hour: paddle,

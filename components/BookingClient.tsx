@@ -16,6 +16,7 @@ import {
   dateToStr,
   fmtDateLong,
   fmtHour,
+  isWeekend,
   money,
   todayStr,
 } from "@/lib/helpers";
@@ -208,6 +209,8 @@ export default function BookingClient({
   }
 
   // ---- payment details rows (mirrors renderPayDetails) ----
+  const weekend = isWeekend(date);
+  const rate = weekend ? settings.weekendPricePerHour : settings.pricePerHour;
   const fullHrs = Math.min(hours, settings.discountAfterHours);
   const extraHrs = Math.max(0, hours - settings.discountAfterHours);
   const paddleCost = paddles * settings.paddleRentPerHour * hours;
@@ -316,7 +319,7 @@ export default function BookingClient({
               {court?.name} · {fmtDateLong(date)} · {fmtHour(from)} – {fmtHour(to)} ({hours} hr{hours > 1 ? "s" : ""})
             </strong>
             <span className="price">
-              {money(settings, calcCourtCost(settings, hours))} court fee
+              {money(settings, calcCourtCost(settings, hours, weekend))} court fee ({weekend ? "weekend" : "weekday"} rate)
               {hours > settings.discountAfterHours ? " · multi-hour discount applied ✓" : ""}
             </span>
           </div>
@@ -352,16 +355,16 @@ export default function BookingClient({
             </div>
             <div className="pd-row">
               <span>
-                Court fee ({fullHrs} hr × {money(settings, settings.pricePerHour)})
+                Court fee ({weekend ? "weekend" : "weekday"} · {fullHrs} hr × {money(settings, rate)})
               </span>
-              <span>{money(settings, fullHrs * settings.pricePerHour)}</span>
+              <span>{money(settings, fullHrs * rate)}</span>
             </div>
             {extraHrs > 0 && (
               <div className="pd-row">
                 <span>
-                  Discounted hours ({extraHrs} hr × {money(settings, settings.pricePerHour - settings.discountPerHour)})
+                  Discounted hours ({extraHrs} hr × {money(settings, rate - settings.discountPerHour)})
                 </span>
-                <span>{money(settings, extraHrs * (settings.pricePerHour - settings.discountPerHour))}</span>
+                <span>{money(settings, extraHrs * (rate - settings.discountPerHour))}</span>
               </div>
             )}
             {paddles > 0 && (
@@ -374,7 +377,7 @@ export default function BookingClient({
             )}
             <div className="pd-row total">
               <span>Total</span>
-              <span>{money(settings, calcTotal(settings, hours, paddles))}</span>
+              <span>{money(settings, calcTotal(settings, hours, paddles, weekend))}</span>
             </div>
           </div>
 

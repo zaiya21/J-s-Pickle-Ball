@@ -4,7 +4,7 @@
    js/booking.js confirmBooking() and js/mybookings.js cancel(). */
 import { createClient } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/data";
-import { calcTotal, bookingRef, fmtDateLong, fmtHour } from "@/lib/helpers";
+import { calcTotal, bookingRef, fmtDateLong, fmtHour, isWeekend } from "@/lib/helpers";
 
 export interface CreateBookingInput {
   courtId: string;
@@ -66,7 +66,7 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingA
   );
   if (blocked) return { ok: false, error: "That slot is under maintenance." };
 
-  const amount = calcTotal(settings, hours, paddles);
+  const amount = calcTotal(settings, hours, paddles, isWeekend(date));
   const payStatus = payMethod === "Pay at venue" ? "unpaid" : "pending";
   const ref = bookingRef();
 
