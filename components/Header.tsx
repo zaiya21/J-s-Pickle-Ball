@@ -126,6 +126,23 @@ export default function Header({ notifications = [] }: { notifications?: Notific
               {label}
             </Link>
           ))}
+          {user && (
+            <>
+              <Link className="nav-link mobile-profile" href="/profile" onClick={() => setMenuOpen(false)}>
+                <span className="avatar">{initials(user.name)}</span>
+                {user.name}
+              </Link>
+              <button
+                className="nav-link mobile-signout"
+                onClick={() => {
+                  setMenuOpen(false);
+                  logout();
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          )}
         </nav>
       </header>
 

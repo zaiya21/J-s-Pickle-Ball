@@ -819,14 +819,18 @@ body::after {
   /* Replace the cramped swipeable nav strip with a tap-to-open menu */
   .mainnav { display: none; }
 
+  /* Right cluster: notification bell (aligned with the logo), then the toggle */
+  .topbar-right { order: 2; margin-left: auto; gap: .4rem; }
   .nav-toggle {
     display: inline-flex; align-items: center; justify-content: center;
-    margin-left: auto;
+    order: 3; margin-left: .4rem;
     width: 44px; height: 44px; padding: 0; font-size: 1.4rem; line-height: 1;
     background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
     color: var(--ink); cursor: pointer;
   }
-  .topbar-right { margin-left: .5rem; }
+  /* Profile + sign out live in the menu on mobile, not the bar */
+  .topbar-right .user-chip,
+  .topbar-right .btn.ghost { display: none; }
 
   /* Full-width dropdown panel with every page link, stacked and easy to tap.
      Only rendered when open, so closed state adds no gap below the bar. */
@@ -837,4 +841,10 @@ body::after {
     display: block; width: 100%; text-align: left;
     padding: .85rem 1rem; margin-top: .28rem; border-radius: 10px; font-size: 1rem;
   }
+  .mobile-nav .mobile-profile {
+    display: flex; align-items: center; gap: .6rem;
+    margin-top: .5rem; padding-top: .9rem; border-top: 1px solid var(--border);
+    text-transform: none; letter-spacing: 0;
+  }
+  .mobile-nav .mobile-signout { color: var(--danger); }
 }
