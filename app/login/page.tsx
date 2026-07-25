@@ -13,6 +13,15 @@ import { SUPABASE_CONFIGURED, NOT_CONFIGURED_MSG } from "@/lib/supabaseConfig";
 
 type Panel = "login" | "register" | "verify" | "forgot";
 
+/* Guard against a hung email send (e.g. misconfigured/unactivated SMTP) so the
+   form doesn't spin forever — rejects after `ms` if the call hasn't resolved. */
+function withTimeout<T>(p: Promise<T>, ms = 15000): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
+  ]);
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -98,14 +107,22 @@ export default function LoginPage() {
     if (regPassword !== regPassword2) return toast("Passwords do not match.", "error");
 
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: regPassword,
-      options: {
-        data: { name, phone: regPhone.trim() },
-        emailRedirectTo: `${location.origin}/auth/callback?next=/login`,
-      },
-    });
+    let error;
+    try {
+      ({ error } = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password: regPassword,
+          options: {
+            data: { name, phone: regPhone.trim() },
+            emailRedirectTo: `${location.origin}/auth/callback?next=/login`,
+          },
+        }),
+      ));
+    } catch {
+      setBusy(false);
+      return toast("The confirmation email is taking too long to send — check your SMTP settings (Brevo account may need activation).", "error");
+    }
     setBusy(false);
     if (error) {
       if (/registered|already/i.test(error.message))
@@ -131,9 +148,14 @@ export default function LoginPage() {
     if (!SUPABASE_CONFIGURED) return toast(NOT_CONFIGURED_MSG, "error");
     const email = forgotEmail.trim().toLowerCase();
     setBusy(true);
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${location.origin}/reset`,
-    });
+    try {
+      await withTimeout(
+        supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/reset` }),
+      );
+    } catch {
+      setBusy(false);
+      return toast("The email is taking too long to send — check your SMTP settings (Brevo account may need activation).", "error");
+    }
     setBusy(false);
     // Never reveal whether the email exists (matches old Auth.forgot behavior).
     toast("If an account exists for that email, a reset link is on its way.", "success");
