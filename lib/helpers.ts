@@ -112,6 +112,34 @@ export const GALLERY_PLACEHOLDER =
       `<text x='50%' y='50%' fill='#7d7495' font-family='sans-serif' font-size='16' text-anchor='middle'>Photo coming soon</text></svg>`,
   );
 
+/* Downscale + compress an image file to a JPEG Blob for upload (client-only).
+   Keeps big phone photos from being served at full size. */
+export function compressImage(file: File, maxW = 1400, quality = 0.82): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith("image/")) return reject(new Error("not an image"));
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxW / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error("compress failed"))),
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("bad image"));
+    };
+    img.src = url;
+  });
+}
+
 /* Downscale + compress an image file to a data URL (client-only).
    Ported from imageFileToDataURL in js/db.js. */
 export function imageFileToDataURL(file: File, maxW = 1000, quality = 0.8): Promise<string> {

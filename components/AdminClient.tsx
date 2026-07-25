@@ -33,7 +33,7 @@ import {
 import { toggleReviewStatus, deleteReview } from "@/lib/actions/reviews";
 import {
   GALLERY_PLACEHOLDER,
-  calcCourtCost,
+  compressImage,
   dateToStr,
   escapeHtml,
   fmtDateLong,
@@ -99,7 +99,13 @@ export default function AdminClient({ data }: { data: AdminData }) {
 
   async function uploadTo(path: string, file: File | undefined): Promise<string | null> {
     if (!file || !file.type.startsWith("image/")) return null;
-    const { error } = await supabase.storage.from("media").upload(path, file, { upsert: true });
+    let body: Blob = file;
+    try {
+      body = await compressImage(file); // downscale/compress before storing
+    } catch {
+      /* fall back to the original file if compression fails */
+    }
+    const { error } = await supabase.storage.from("media").upload(path, body, { upsert: true, contentType: "image/jpeg" });
     if (error) {
       toast("Upload failed — try a smaller image.", "error");
       return null;

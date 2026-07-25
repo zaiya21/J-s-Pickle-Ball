@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { saveEvent, deleteEvent } from "@/lib/actions/events";
-import { fmtDateLong, todayStr } from "@/lib/helpers";
+import { fmtDateLong, todayStr, compressImage } from "@/lib/helpers";
 import type { EventRec } from "@/lib/types";
 
 const MAX_PHOTOS = 5;
@@ -39,8 +39,14 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
         break;
       }
       if (!f.type.startsWith("image/")) continue;
-      const path = `events/${crypto.randomUUID()}-${f.name.replace(/[^a-zA-Z0-9.]/g, "_")}`;
-      const { error } = await supabase.storage.from("media").upload(path, f, { upsert: true });
+      let body: Blob = f;
+      try {
+        body = await compressImage(f);
+      } catch {
+        /* keep original on failure */
+      }
+      const path = `events/${crypto.randomUUID()}.jpg`;
+      const { error } = await supabase.storage.from("media").upload(path, body, { upsert: true, contentType: "image/jpeg" });
       if (error) {
         toast(`Couldn't upload "${f.name}".`, "error");
         continue;

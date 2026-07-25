@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/toast";
 import { cancelBooking } from "@/lib/actions/bookings";
 import type { Settings } from "@/lib/types";
-import { fmtDateLong, fmtHour, money } from "@/lib/helpers";
+import { fmtDateLong, fmtHour, money, compressImage } from "@/lib/helpers";
 
 export interface MyBooking {
   id: string;
@@ -91,8 +91,14 @@ export default function MyBookingsClient({
 
   async function onProof(b: MyBooking, file: File | undefined) {
     if (!file || !file.type.startsWith("image/")) return;
+    let body: Blob = file;
+    try {
+      body = await compressImage(file); // keep proof screenshots small but readable
+    } catch {
+      /* keep original on failure */
+    }
     const path = `${userId}/${b.id}.jpg`;
-    const { error: upErr } = await supabase.storage.from("proofs").upload(path, file, { upsert: true });
+    const { error: upErr } = await supabase.storage.from("proofs").upload(path, body, { upsert: true, contentType: "image/jpeg" });
     if (upErr) return toast("Couldn't upload that image. Try a smaller file.", "error");
     const { data: pub } = supabase.storage.from("proofs").getPublicUrl(path);
     const url = `${pub.publicUrl}?t=${Date.now()}`;
