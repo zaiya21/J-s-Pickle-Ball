@@ -449,9 +449,10 @@ body[data-page="contacts"] .page-head h1 {
 }
 .hero::before {
   content: ""; position: absolute; inset: 0; z-index: -1;
+  /* logo removed here — the global body::before watermark covers it now,
+     so this only keeps the hero's purple glow (no duplicate logo). */
   background:
-    radial-gradient(600px 320px at 50% 0%, rgba(124, 58, 237, .28), transparent 70%),
-    url("../Pickle Ball Logo.jpg") center / 120vmin no-repeat;
+    radial-gradient(600px 320px at 50% 0%, rgba(124, 58, 237, .28), transparent 70%);
   opacity: .1;
 }
 .hero-inner { max-width: 760px; margin: 0 auto; }
