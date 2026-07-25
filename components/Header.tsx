@@ -37,6 +37,7 @@ export default function Header({ notifications = [] }: { notifications?: Notific
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [localRead, setLocalRead] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false); // mobile hamburger menu
 
   // The auth pages render no header/footer (as login.html did).
   if (pathname === "/login" || pathname === "/reset") return null;
@@ -84,6 +85,15 @@ export default function Header({ notifications = [] }: { notifications?: Notific
             </Link>
           ))}
         </nav>
+        {/* Mobile-only hamburger (hidden on desktop via CSS) */}
+        <button
+          className="nav-toggle"
+          aria-label="Menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          {menuOpen ? "✕" : "☰"}
+        </button>
         <div className="topbar-right">
           {user ? (
             <>
@@ -104,6 +114,19 @@ export default function Header({ notifications = [] }: { notifications?: Notific
             </Link>
           )}
         </div>
+        {/* Mobile-only dropdown menu (hidden on desktop via CSS) */}
+        <nav className={`mobile-nav ${menuOpen ? "open" : ""}`}>
+          {nav.map(([key, href, label]) => (
+            <Link
+              key={key}
+              className={`nav-link ${active === key ? "active" : ""}`}
+              href={href}
+              onClick={() => setMenuOpen(false)}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       {user && (

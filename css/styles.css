@@ -808,3 +808,33 @@ body::after {
   background: #fff; border-radius: 8px; border: 1px solid var(--border);
   margin-bottom: .4rem;
 }
+
+/* ============ Mobile hamburger navigation ============
+   Desktop is untouched: both controls are display:none above the breakpoint,
+   so they add no space and never render on desktop. */
+.nav-toggle { display: none; }
+.mobile-nav { display: none; }
+
+@media (max-width: 860px) {
+  /* Replace the cramped swipeable nav strip with a tap-to-open menu */
+  .mainnav { display: none; }
+
+  .nav-toggle {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-left: auto;
+    width: 44px; height: 44px; padding: 0; font-size: 1.4rem; line-height: 1;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--ink); cursor: pointer;
+  }
+  .topbar-right { margin-left: .5rem; }
+
+  /* Full-width dropdown panel with every page link, stacked and easy to tap.
+     Only rendered when open, so closed state adds no gap below the bar. */
+  .mobile-nav.open {
+    display: block; order: 4; width: 100%; padding-top: .3rem;
+  }
+  .mobile-nav .nav-link {
+    display: block; width: 100%; text-align: left;
+    padding: .85rem 1rem; margin-top: .28rem; border-radius: 10px; font-size: 1rem;
+  }
+}
