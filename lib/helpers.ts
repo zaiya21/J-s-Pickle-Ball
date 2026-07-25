@@ -14,6 +14,52 @@ export function dateToStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+/* ---- venue time (Asia/Manila, UTC+8, no DST) ----
+   Computed identically on the server and the client so the booking grid never
+   disagrees between SSR and hydration, and never mis-marks slots by timezone. */
+export const MANILA_TZ = "Asia/Manila";
+
+export function manilaNow(): { dateStr: string; hour: number } {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MANILA_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  let hour = parseInt(get("hour"), 10);
+  if (hour === 24) hour = 0; // some engines report midnight as "24"
+  return { dateStr: `${get("year")}-${get("month")}-${get("day")}`, hour };
+}
+
+export function manilaTodayStr(): string {
+  return manilaNow().dateStr;
+}
+
+/* The absolute instant a Manila slot starts (fixed +08:00 offset, no DST). */
+export function manilaSlotStart(dateStr: string, hour: number): Date {
+  return new Date(`${dateStr}T${String(hour).padStart(2, "0")}:00:00+08:00`);
+}
+
+/* Add n days to a YYYY-MM-DD string, anchored at noon UTC to dodge edges. */
+export function addDaysStr(dateStr: string, n: number): string {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/* Deterministic weekday/day/month labels for a date chip. */
+export function dateChipParts(dateStr: string): { dow: string; dom: string; mon: string } {
+  const d = new Date(dateStr + "T12:00:00Z");
+  return {
+    dow: d.toLocaleDateString("en-US", { timeZone: "UTC", weekday: "short" }),
+    dom: String(d.getUTCDate()),
+    mon: d.toLocaleDateString("en-US", { timeZone: "UTC", month: "short" }),
+  };
+}
+
 export function fmtHour(h: number): string {
   const ampm = h >= 12 ? "PM" : "AM";
   let hh = h % 12;
@@ -46,9 +92,10 @@ export function money(settings: Settings, n: number): string {
 // alias matching js/db.js name
 export const fmtMoney = money;
 
-/* Weekend = Saturday or Sunday, from a YYYY-MM-DD string. */
+/* Weekend = Saturday or Sunday, from a YYYY-MM-DD string (UTC-anchored so the
+   result is the same on server and client). */
 export function isWeekend(dateStr: string): boolean {
-  const d = new Date(dateStr + "T00:00:00").getDay();
+  const d = new Date(dateStr + "T12:00:00Z").getUTCDay();
   return d === 0 || d === 6;
 }
 

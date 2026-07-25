@@ -5,26 +5,27 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { useSession } from "@/components/session";
 import { useToast } from "@/components/toast";
 import { createBooking } from "@/lib/actions/bookings";
 import type { Court, Settings } from "@/lib/types";
 import {
   GALLERY_PLACEHOLDER,
+  addDaysStr,
   calcCourtCost,
   calcTotal,
-  dateToStr,
+  dateChipParts,
   fmtDateLong,
   fmtHour,
   isWeekend,
+  manilaNow,
+  manilaTodayStr,
   money,
-  todayStr,
 } from "@/lib/helpers";
 
 interface Occ {
   start: number;
   end: number;
-  userId: string;
+  mine: boolean;
 }
 interface Maint {
   courtId: string;
@@ -75,16 +76,16 @@ export default function BookingClient({
   settings: Settings;
   pay: PayInfo;
 }) {
-  const user = useSession();
   const { toast } = useToast();
   const supabase = useMemo(() => createClient(), []);
 
   const [courtId, setCourtId] = useState<string | null>(courts[0]?.id ?? null);
-  const [date, setDate] = useState(todayStr());
+  const [date, setDate] = useState(() => manilaTodayStr());
   const [selected, setSelected] = useState<number[]>([]);
   const [paddles, setPaddles] = useState(0);
   const [occ, setOcc] = useState<Occ[]>([]);
   const [maint, setMaint] = useState<Maint[]>([]);
+  const [, setTick] = useState(0); // ticks every minute so "past" marking stays current
 
   const [payOpen, setPayOpen] = useState(false);
   const [payMethod, setPayMethod] = useState("GCash");
@@ -97,13 +98,22 @@ export default function BookingClient({
       supabase.rpc("court_occupancy", { p_date: date, p_court: courtId }),
       supabase.from("maintenance").select("court_id,start_hour,end_hour").eq("date", date),
     ]);
-    setOcc(((occRows as any[]) ?? []).map((r) => ({ start: r.start_hour, end: r.end_hour, userId: r.user_id })));
+    setOcc(((occRows as any[]) ?? []).map((r) => ({ start: r.start_hour, end: r.end_hour, mine: !!r.is_mine })));
     setMaint(((maintRows as any[]) ?? []).map((m) => ({ courtId: m.court_id, start: m.start_hour, end: m.end_hour })));
   }, [supabase, date, courtId]);
 
+  // Fetch on court/date change, then poll so other people's bookings show up live.
   useEffect(() => {
     refresh();
+    const poll = setInterval(refresh, 15000);
+    return () => clearInterval(poll);
   }, [refresh]);
+
+  // Re-render each minute so slots that slip into the past get marked without a reload.
+  useEffect(() => {
+    const t = setInterval(() => setTick((x) => x + 1), 60000);
+    return () => clearInterval(t);
+  }, []);
 
   const court = courts.find((c) => c.id === courtId) || null;
   const courtIndex = courts.findIndex((c) => c.id === courtId);
@@ -116,13 +126,13 @@ export default function BookingClient({
   }
 
   function slotState(hour: number): { cls: string; label: string } {
-    const now = new Date();
-    const isToday = date === todayStr();
-    if (date < todayStr() || (isToday && hour <= now.getHours())) return { cls: "past", label: "Past" };
+    const { dateStr: today, hour: nowHour } = manilaNow(); // venue time
+    const isToday = date === today;
+    if (date < today || (isToday && hour <= nowHour)) return { cls: "past", label: "Past" };
     if (maintenanceAt(hour)) return { cls: "maint", label: "Maintenance" };
     const bk = slotBooked(hour);
     if (bk) {
-      return bk.userId === user?.id ? { cls: "mine", label: "Your booking" } : { cls: "booked", label: "Booked" };
+      return bk.mine ? { cls: "mine", label: "Your booking" } : { cls: "booked", label: "Booked" };
     }
     if (selected.includes(hour)) return { cls: "selected", label: "Selected" };
     return { cls: "available", label: "Available" };
@@ -161,13 +171,8 @@ export default function BookingClient({
   const to = hours ? Math.max(...selected) + 1 : 0;
 
   const dates = useMemo(() => {
-    const out: Date[] = [];
-    for (let i = 0; i < 14; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      out.push(d);
-    }
-    return out;
+    const today = manilaTodayStr();
+    return Array.from({ length: 14 }, (_, i) => addDaysStr(today, i));
   }, []);
 
   function openPayment() {
@@ -252,17 +257,17 @@ export default function BookingClient({
           <div className="control">
             <span className="control-label">Date</span>
             <div className="date-strip">
-              {dates.map((d) => {
-                const str = dateToStr(d);
+              {dates.map((str) => {
+                const { dow, dom, mon } = dateChipParts(str);
                 return (
                   <button
                     key={str}
                     className={`date-chip ${str === date ? "active" : ""}`}
                     onClick={() => changeDate(str)}
                   >
-                    <span className="dow">{d.toLocaleDateString(undefined, { weekday: "short" })}</span>
-                    <span className="dom">{d.getDate()}</span>
-                    <span className="mon">{d.toLocaleDateString(undefined, { month: "short" })}</span>
+                    <span className="dow">{dow}</span>
+                    <span className="dom">{dom}</span>
+                    <span className="mon">{mon}</span>
                   </button>
                 );
               })}

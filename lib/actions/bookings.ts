@@ -4,7 +4,7 @@
    js/booking.js confirmBooking() and js/mybookings.js cancel(). */
 import { createClient } from "@/lib/supabase/server";
 import { getSettings } from "@/lib/data";
-import { calcTotal, bookingRef, fmtDateLong, fmtHour, isWeekend } from "@/lib/helpers";
+import { calcTotal, bookingRef, fmtDateLong, fmtHour, isWeekend, manilaSlotStart } from "@/lib/helpers";
 
 export interface CreateBookingInput {
   courtId: string;
@@ -50,10 +50,8 @@ export async function createBooking(input: CreateBookingInput): Promise<BookingA
   if (start < settings.openHour || end > settings.closeHour)
     return { ok: false, error: "Selected time is outside opening hours." };
 
-  // reject past times
-  const startAt = new Date(date + "T00:00:00");
-  startAt.setHours(start);
-  if (startAt.getTime() <= Date.now())
+  // reject past times (venue time, Asia/Manila +08:00 — not the server's UTC)
+  if (manilaSlotStart(date, start).getTime() <= Date.now())
     return { ok: false, error: "That time has already passed — pick a later slot." };
 
   // maintenance overlap
@@ -126,8 +124,7 @@ export async function cancelBooking(id: string): Promise<BookingActionResult> {
   if (b.status !== "confirmed") return { ok: false, error: "Booking is not active." };
 
   const settings = await getSettings();
-  const start = new Date(b.date + "T00:00:00");
-  start.setHours(b.start_hour);
+  const start = manilaSlotStart(b.date, b.start_hour); // venue time, not server UTC
   if (start.getTime() - Date.now() <= settings.cancelHours * 3600 * 1000)
     return { ok: false, error: `Too late to cancel — the ${settings.cancelHours}-hour policy applies.` };
 

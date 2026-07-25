@@ -180,16 +180,16 @@ drop policy if exists bookings_admin_all on public.bookings;
 create policy bookings_admin_all on public.bookings
   for all using (public.is_admin()) with check (public.is_admin());
 
--- Anyone (even signed-out visitors on the public booking preview) may read the
--- slot occupancy of a court without seeing who booked it. The select policy
--- above only exposes rows to owners/admins, which is what we want; the booking
--- page fetches occupancy through a SECURITY DEFINER function instead:
+-- Anyone (even signed-out visitors) may read a court's slot occupancy without
+-- learning WHO booked each slot. This SECURITY DEFINER function returns only
+-- the times plus an is_mine flag computed from auth.uid() — it never exposes
+-- user IDs, so the caller can label "Your booking" without enumeration.
 create or replace function public.court_occupancy(p_date date, p_court text)
-returns table (start_hour int, end_hour int, user_id uuid)
+returns table (start_hour int, end_hour int, is_mine boolean)
 language sql
 security definer set search_path = public
 as $$
-  select start_hour, end_hour, user_id
+  select start_hour, end_hour, (user_id = auth.uid()) as is_mine
   from public.bookings
   where date = p_date and court_id = p_court and status = 'confirmed';
 $$;
