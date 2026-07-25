@@ -561,7 +561,7 @@ body[data-page="contacts"] .page-head h1 {
 .event-card.past-event { opacity: .6; }
 .event-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .6rem; margin-top: .9rem; }
 .event-photos img {
-  width: 100%; height: 2000px; object-fit: cover; border-radius: 8px;
+  width: 100%; height: 220px; object-fit: cover; border-radius: 8px;
   border: 1px solid var(--border); cursor: zoom-in; transition: .15s;
 }
 .event-photos img:hover { border-color: var(--purple); transform: scale(1.02); }
@@ -689,7 +689,7 @@ body[data-page="contacts"] .page-head h1 {
 
   /* events */
   .event-photos { grid-template-columns: 1fr 1fr; }
-  .event-photos img { height: 120px; }
+  .event-photos img { height: 160px; }
   .event-top .row.gap { width: 100%; }
   .event-top .row.gap .mini-btn { flex: 1; }
   .lightbox { padding: .8rem; }
