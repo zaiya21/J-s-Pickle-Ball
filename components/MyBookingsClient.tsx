@@ -105,7 +105,7 @@ export default function MyBookingsClient({
     const { error: dbErr } = await supabase.rpc("set_booking_proof", { p_id: b.id, p_url: url });
     if (dbErr) return toast("Couldn't save the proof. Please try again.", "error");
     await supabase.rpc("add_admin_notification", {
-      p_msg: `📎 Proof of payment uploaded for booking ${b.ref} (${money(settings, b.amount)} via ${b.payMethod}).`,
+      p_msg: `Proof of payment uploaded for booking ${b.ref} (${money(settings, b.amount)} via ${b.payMethod}).`,
       p_type: "info",
     });
     setBookings((prev) => prev.map((x) => (x.id === b.id ? { ...x, proof: url } : x)));
@@ -156,7 +156,7 @@ export default function MyBookingsClient({
                   </div>
                   <div className="b-meta">
                     {courtName(b.courtId)} · Ref {b.ref}
-                    {b.paddles ? ` · 🏓 ${b.paddles} paddle${b.paddles > 1 ? "s" : ""}` : ""} · {b.payMethod} (
+                    {b.paddles ? ` · ${b.paddles} paddle${b.paddles > 1 ? "s" : ""}` : ""} · {b.payMethod} (
                     {b.payStatus})
                   </div>
                 </div>

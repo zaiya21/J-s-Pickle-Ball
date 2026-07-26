@@ -20,11 +20,11 @@ export default async function ContactsPage() {
         <div className="card">
           <h3>Get in touch</h3>
           <ul className="contact-list">
-            <li><span className="c-ico">📍</span><div><strong>Address</strong><br /><span className="muted">{c.address}</span></div></li>
-            <li><span className="c-ico">📞</span><div><strong>Phone / Viber</strong><br /><span className="muted">{c.phone}</span></div></li>
-            <li><span className="c-ico">✉️</span><div><strong>Email</strong><br /><span className="muted">{c.email}</span></div></li>
-            <li><span className="c-ico">🕗</span><div><strong>Operating hours</strong><br /><span className="muted">Daily, <span>{hrs}</span></span></div></li>
-            <li><span className="c-ico">📱</span><div><strong>Socials</strong><br /><span className="muted">{c.socials}</span></div></li>
+            <li><div><strong>Address</strong><br /><span className="muted">{c.address}</span></div></li>
+            <li><div><strong>Phone / Viber</strong><br /><span className="muted">{c.phone}</span></div></li>
+            <li><div><strong>Email</strong><br /><span className="muted">{c.email}</span></div></li>
+            <li><div><strong>Operating hours</strong><br /><span className="muted">Daily, <span>{hrs}</span></span></div></li>
+            <li><div><strong>Socials</strong><br /><span className="muted">{c.socials}</span></div></li>
           </ul>
         </div>
 
@@ -52,7 +52,7 @@ export default async function ContactsPage() {
 
       {c.landmarkImage && (
         <div className="card" style={{ marginTop: "1rem" }}>
-          <h3>📸 Landmark — what to look for</h3>
+          <h3>Landmark — what to look for</h3>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={c.landmarkImage}

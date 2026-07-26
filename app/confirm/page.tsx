@@ -63,7 +63,7 @@ export default function ConfirmPage() {
 
         {phase === "ok" && (
           <div className="auth-panel">
-            <div className="receipt-check">✔</div>
+            <div className="receipt-check">✓</div>
             <h2 className="center">Email confirmed!</h2>
             <p className="muted center">
               Your email address has been verified. You can now sign in to your J&apos;s Pickle Yard account.

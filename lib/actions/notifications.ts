@@ -23,7 +23,7 @@ export async function sendContactMessage(name: string, email: string, message: s
   const clean = message.trim().slice(0, 200);
   if (!name.trim() || !clean) return { ok: false, error: "Please fill in the form." };
   const { error } = await supabase.rpc("add_admin_notification", {
-    p_msg: `📨 Message from ${name.trim()} (${email.trim()}): "${clean}"`,
+    p_msg: `Message from ${name.trim()} (${email.trim()}): "${clean}"`,
     p_type: "info",
   });
   return error ? { ok: false, error: "Could not send. Please try again." } : { ok: true };

@@ -149,7 +149,7 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
     const rest = ev.photos ? ev.photos.slice(1) : [];
     const badge =
       status === "happening"
-        ? { cls: "happening", label: "🔴 Happening now" }
+        ? { cls: "happening", label: "Happening now" }
         : status === "upcoming"
           ? { cls: "live", label: "Upcoming" }
           : { cls: "done", label: "Finished" };
@@ -163,7 +163,7 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
           style={cover ? { backgroundImage: `url("${cover}")` } : undefined}
           onClick={cover ? () => setLightbox({ photos: ev.photos, idx: 0, title: ev.title }) : undefined}
         >
-          {!cover && <span className="news-cover-ico">🏆</span>}
+          {!cover && <span className="news-cover-ico">{ev.title.charAt(0).toUpperCase()}</span>}
           <div className="news-cover-top">
             <span className={`news-badge ${badge.cls}`}>{badge.label}</span>
             {isAdmin && (
@@ -174,8 +174,8 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
             )}
           </div>
           <div className="news-cover-date">
-            📅 {fmtDateLong(ev.date)}
-            {timeLabel ? ` · 🕗 ${timeLabel}` : ""}
+            {fmtDateLong(ev.date)}
+            {timeLabel ? ` · ${timeLabel}` : ""}
           </div>
         </div>
         <div className="news-body">
@@ -277,13 +277,13 @@ export default function EventsClient({ events, isAdmin }: { events: EventRec[]; 
       <div className="event-list" style={{ marginTop: "1rem" }}>
         {events.length === 0 ? (
           <div className="empty-state">
-            No events posted yet — watch this space for tournaments, clinics, and open-play nights! 🏆
+            No events posted yet — watch this space for tournaments, clinics, and open-play nights.
           </div>
         ) : (
           <>
             {happening.length > 0 && (
               <>
-                <div className="event-divider">🔴 Happening now</div>
+                <div className="event-divider">Happening now</div>
                 {happening.map((r) => (
                   <EventCard key={r.ev.id} ev={r.ev} status={r.status} />
                 ))}

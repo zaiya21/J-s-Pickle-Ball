@@ -222,7 +222,7 @@ export default function LoginPage() {
                 onChange={(e) => setLoginPassword(e.target.value)}
               />
               <button type="button" className="pw-toggle" onClick={() => setShowLoginPw((s) => !s)}>
-                👁
+                {showLoginPw ? "Hide" : "Show"}
               </button>
             </div>
           </label>
@@ -291,7 +291,7 @@ export default function LoginPage() {
           </label>
           {emailTaken && (
             <p className="field-error">
-              ⚠ This email is already registered.{" "}
+              This email is already registered.{" "}
               <a
                 href="#"
                 className="link"
@@ -343,7 +343,7 @@ export default function LoginPage() {
                 onChange={(e) => setRegPassword(e.target.value)}
               />
               <button type="button" className="pw-toggle" onClick={() => setShowRegPw((s) => !s)}>
-                👁
+                {showRegPw ? "Hide" : "Show"}
               </button>
             </div>
           </label>
@@ -387,7 +387,7 @@ export default function LoginPage() {
             in.
           </p>
           <p className="muted small" style={{ marginTop: ".2rem" }}>
-            📩 Don&apos;t see it? Check your <strong>spam / junk folder</strong> — it can take a minute to arrive.
+            Don&apos;t see it? Check your <strong>spam / junk folder</strong> — it can take a minute to arrive.
           </p>
           <button className="btn primary block" type="button" onClick={() => setPanel("login")}>
             Back to Sign In
@@ -411,7 +411,7 @@ export default function LoginPage() {
         <form className={`auth-panel ${show("forgot")}`} onSubmit={onForgot}>
           <h2>Reset password</h2>
           <p className="muted">
-            Enter your account email and we&apos;ll send a reset link. 📩 Check your <strong>inbox and spam / junk
+            Enter your account email and we&apos;ll send a reset link. Check your <strong>inbox and spam / junk
             folder</strong> after you submit.
           </p>
           <label>

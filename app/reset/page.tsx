@@ -116,7 +116,7 @@ export default function ResetPage() {
                   onChange={(e) => setPw(e.target.value)}
                 />
                 <button type="button" className="pw-toggle" onClick={() => setShow((s) => !s)}>
-                  👁
+                  {show ? "Hide" : "Show"}
                 </button>
               </div>
             </label>

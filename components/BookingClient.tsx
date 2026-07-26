@@ -388,7 +388,7 @@ export default function BookingClient({
 
           <div className="paddle-row">
             <div>
-              <strong>🏓 Paddle rental</strong>
+              <strong>Paddle rental</strong>
               <div className="muted small">₱{settings.paddleRentPerHour} per paddle, per hour</div>
             </div>
             <div className="qty-ctrl">
@@ -415,15 +415,15 @@ export default function BookingClient({
                 <span>
                   {m === "GCash" && (
                     <>
-                      📱 GCash <em className="muted small">(scan QR, then upload proof)</em>
+                      GCash <em className="muted small">(scan QR, then upload proof)</em>
                     </>
                   )}
                   {m === "Bank Transfer" && (
                     <>
-                      🏦 Bank Transfer <em className="muted small">(scan QR, then upload proof)</em>
+                      Bank Transfer <em className="muted small">(scan QR, then upload proof)</em>
                     </>
                   )}
-                  {m === "Pay at venue" && <>🏟 Pay at Venue</>}
+                  {m === "Pay at venue" && <>Pay at Venue</>}
                 </span>
               </label>
             ))}
@@ -483,7 +483,7 @@ export default function BookingClient({
       {/* Receipt modal */}
       <div className={`modal-backdrop ${receipt ? "" : "hidden"}`}>
         <div className="modal">
-          <div className="receipt-check">✔</div>
+          <div className="receipt-check">✓</div>
           <h3 className="center">Booking Confirmed!</h3>
           {receipt && (
             <div className="receipt-body">
@@ -523,7 +523,7 @@ export default function BookingClient({
               </div>
               {receipt.payStatus === "pending" && (
                 <p className="muted small center" style={{ marginTop: ".6rem" }}>
-                  ⚠ Please upload your proof of payment in <strong>My Bookings</strong> so we can verify it.
+                  Please upload your proof of payment in <strong>My Bookings</strong> so we can verify it.
                 </p>
               )}
             </div>

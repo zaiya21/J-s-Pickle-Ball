@@ -19,7 +19,6 @@ export default async function PricingPage() {
 
       <div className="price-grid">
         <div className="card price-card featured">
-          <div className="price-icon">🎾</div>
           <h3>Court Rate</h3>
           <div className="big-price">
             <span>{m(s.pricePerHour)}</span>
@@ -35,7 +34,6 @@ export default async function PricingPage() {
         </div>
 
         <div className="card price-card">
-          <div className="price-icon">⏱</div>
           <h3>Multi-Hour Discount</h3>
           <div className="big-price">
             <span>{m(s.discountPerHour)}</span>
@@ -47,7 +45,6 @@ export default async function PricingPage() {
         </div>
 
         <div className="card price-card">
-          <div className="price-icon">🏓</div>
           <h3>Paddle Rental</h3>
           <div className="big-price">
             <span>{m(s.paddleRentPerHour)}</span>

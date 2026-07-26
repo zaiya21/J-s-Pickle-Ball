@@ -163,7 +163,7 @@ export default function AdminClient({ data }: { data: AdminData }) {
           <BarChart data={perHour} tip={(v) => `${v} booking${v === 1 ? "" : "s"}`} />
         </div>
         <div className="card chart-card">
-          <div className="chart-title">📄 Daily earnings report</div>
+          <div className="chart-title">Daily earnings report</div>
           <div className="filter-row" style={{ marginBottom: 0 }}>
             <input type="date" value={repDate} onChange={(e) => setRepDate(e.target.value)} />
             <button className="btn primary small-btn" onClick={() => (repDate ? exportDailyReport(repDate) : toast("Pick a date first.", "error"))}>
@@ -219,7 +219,7 @@ export default function AdminClient({ data }: { data: AdminData }) {
   .printbtn { display: block; margin: 0 0 18px auto; background: #7c3aed; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 14px; font-weight: 700; cursor: pointer; }
   @media print { .printbtn { display: none; } body { margin: 10mm; } }
 </style></head><body>
-  <button class="printbtn" onclick="print()">🖨 Print / Save as PDF</button>
+  <button class="printbtn" onclick="print()">Print / Save as PDF</button>
   <div class="head"><img src="${logo}" alt="logo">
     <div><h1>J's Pickle Yard — Daily Earnings Report</h1>
       <div class="sub">${fmtDateLong(date)} &nbsp;·&nbsp; generated ${new Date().toLocaleString()}</div></div></div>
@@ -297,7 +297,7 @@ export default function AdminClient({ data }: { data: AdminData }) {
                     <td>{userName(b.userId)}</td>
                     <td>{courtName(b.courtId)}</td>
                     <td>{fmtDateLong(b.date)}</td>
-                    <td>{fmtHour(b.start)}–{fmtHour(b.end)}{b.paddles ? ` · 🏓${b.paddles}` : ""}</td>
+                    <td>{fmtHour(b.start)}–{fmtHour(b.end)}{b.paddles ? ` · ${b.paddles} paddle${b.paddles > 1 ? "s" : ""}` : ""}</td>
                     <td>{money(b.amount)}</td>
                     <td>
                       {b.payMethod}
@@ -306,7 +306,7 @@ export default function AdminClient({ data }: { data: AdminData }) {
                       {b.proof && (
                         <>
                           <br />
-                          <button className="link-btn" onClick={() => showImage(b.proof, "Proof of payment " + b.ref)}>📎 view proof</button>
+                          <button className="link-btn" onClick={() => showImage(b.proof, "Proof of payment " + b.ref)}>view proof</button>
                         </>
                       )}
                     </td>
@@ -353,7 +353,7 @@ export default function AdminClient({ data }: { data: AdminData }) {
                 <td>{u.email}</td>
                 <td>{u.phone || "—"}</td>
                 <td><span className={`badge ${u.role === "admin" ? "completed" : "pending"}`}>{u.role}</span></td>
-                <td>✅</td>
+                <td>Yes</td>
                 <td>{count(u.id)}</td>
                 <td><span className={`badge ${u.active ? "confirmed" : "cancelled"}`}>{u.active ? "active" : "disabled"}</span></td>
                 <td className="row gap">

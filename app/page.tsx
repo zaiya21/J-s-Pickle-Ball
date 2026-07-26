@@ -90,12 +90,12 @@ export default async function HomePage() {
       <section className="page-wrap section">
         <h2 className="section-title neon">Why Play At J&apos;s?</h2>
         <div className="feature-grid">
-          <div className="card feature"><span className="f-ico">🎾</span><h3>Tournament-Grade Courts</h3><p className="muted">Professional surfacing, regulation nets, and bright night lighting for evening games.</p></div>
-          <div className="card feature"><span className="f-ico">📅</span><h3>Real-Time Booking</h3><p className="muted">See live availability, reserve in seconds, and get instant confirmation with a booking reference.</p></div>
-          <div className="card feature"><span className="f-ico">🏓</span><h3>Gear Rentals</h3><p className="muted">No paddle? Rent one for ₱50/hour at checkout — balls are on the house.</p></div>
-          <div className="card feature"><span className="f-ico">💸</span><h3>Multi-Hour Discounts</h3><p className="muted">Play longer for less — every hour after your first two is ₱50 off.</p></div>
-          <div className="card feature"><span className="f-ico">🚿</span><h3>Player Amenities</h3><p className="muted">Free parking, showers, lockers, and a chill lounge for between-game recovery.</p></div>
-          <div className="card feature"><span className="f-ico">🤝</span><h3>Open Play &amp; Events</h3><p className="muted">Weekly open-play nights, beginner clinics, and monthly tournaments for all levels.</p></div>
+          <div className="card feature"><h3>Tournament-Grade Courts</h3><p className="muted">Professional surfacing, regulation nets, and bright night lighting for evening games.</p></div>
+          <div className="card feature"><h3>Real-Time Booking</h3><p className="muted">See live availability, reserve in seconds, and get instant confirmation with a booking reference.</p></div>
+          <div className="card feature"><h3>Gear Rentals</h3><p className="muted">No paddle? Rent one for ₱50/hour at checkout — balls are on the house.</p></div>
+          <div className="card feature"><h3>Multi-Hour Discounts</h3><p className="muted">Play longer for less — every hour after your first two is ₱50 off.</p></div>
+          <div className="card feature"><h3>Player Amenities</h3><p className="muted">Free parking, showers, lockers, and a chill lounge for between-game recovery.</p></div>
+          <div className="card feature"><h3>Open Play &amp; Events</h3><p className="muted">Weekly open-play nights, beginner clinics, and monthly tournaments for all levels.</p></div>
         </div>
       </section>
 
@@ -116,20 +116,17 @@ export default async function HomePage() {
         <h2 className="section-title neon">Simple, Honest Pricing</h2>
         <div className="price-grid">
           <div className="card price-card featured">
-            <div className="price-icon">🎾</div>
             <h3>Court Rate</h3>
             <div className="big-price"><span>{m(s.pricePerHour)}</span><span className="per">/ hr · weekday</span></div>
             <div className="big-price"><span>{m(s.weekendPricePerHour)}</span><span className="per">/ hr · weekend</span></div>
             <p className="muted small">Per court, minimum 1 hour</p>
           </div>
           <div className="card price-card">
-            <div className="price-icon">⏱</div>
             <h3>Multi-Hour Discount</h3>
             <div className="big-price"><span>{m(s.discountPerHour)}</span><span className="per">/ hour off</span></div>
             <p className="muted small">{m(s.discountPerHour)} off every hour after your first {s.discountAfterHours}</p>
           </div>
           <div className="card price-card">
-            <div className="price-icon">🏓</div>
             <h3>Paddle Rental</h3>
             <div className="big-price"><span>{m(s.paddleRentPerHour)}</span><span className="per">/ paddle / hr</span></div>
             <p className="muted small">Balls included, free of charge</p>
@@ -146,12 +143,12 @@ export default async function HomePage() {
         <h2 className="section-title neon">Find The Yard</h2>
         <div className="map-grid">
           <div className="card">
-            <h3>📍 Location &amp; Hours</h3>
+            <h3>Location &amp; Hours</h3>
             <ul className="contact-list">
-              <li><span className="c-ico">🏟</span><div><strong>J&apos;s Pickle Yard</strong><br /><span className="muted">{c.address}</span></div></li>
-              <li><span className="c-ico">🕗</span><div><strong>Open daily</strong><br /><span className="muted">{hrs}</span></div></li>
-              <li><span className="c-ico">📞</span><div><strong>{c.phone}</strong><br /><span className="muted">Call or Viber for group events</span></div></li>
-              <li><span className="c-ico">🅿️</span><div><strong>Getting here</strong><br /><span className="muted">{c.note}</span></div></li>
+              <li><div><strong>J&apos;s Pickle Yard</strong><br /><span className="muted">{c.address}</span></div></li>
+              <li><div><strong>Open daily</strong><br /><span className="muted">{hrs}</span></div></li>
+              <li><div><strong>{c.phone}</strong><br /><span className="muted">Call or Viber for group events</span></div></li>
+              <li><div><strong>Getting here</strong><br /><span className="muted">{c.note}</span></div></li>
             </ul>
             <Link className="btn primary" style={{ marginTop: ".6rem" }} href="/contacts">
               Contact Us

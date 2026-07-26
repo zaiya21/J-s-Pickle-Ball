@@ -43,7 +43,7 @@ export default function ReviewForm({
     const res = await upsertReview(rating, text);
     setBusy(false);
     if (!res.ok) return toast(res.error || "Could not post review.", "error");
-    toast("Thanks for your review! 🎉", "success");
+    toast("Thanks for your review!", "success");
     router.refresh();
   }
 

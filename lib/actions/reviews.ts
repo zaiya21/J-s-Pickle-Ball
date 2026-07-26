@@ -30,7 +30,7 @@ export async function upsertReview(rating: number, text: string): Promise<Action
 
   if (!existing) {
     await supabase.rpc("add_admin_notification", {
-      p_msg: `⭐ New ${r}-star review from ${profile?.name ?? "a member"}.`,
+      p_msg: `New ${r}-star review from ${profile?.name ?? "a member"}.`,
       p_type: "info",
     });
   }

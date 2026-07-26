@@ -40,7 +40,7 @@ export async function saveEvent(input: EventInput): Promise<ActionResult> {
   const { error } = await supabase.from("events").insert(row);
   if (error) return { ok: false, error: "Could not post event." };
   await supabase.rpc("add_user_broadcast", {
-    p_msg: `📣 New event: ${title} on ${fmtDateLong(input.date)} — check the Events page!`,
+    p_msg: `New event: ${title} on ${fmtDateLong(input.date)} — check the Events page!`,
     p_type: "info",
   });
   return { ok: true };
