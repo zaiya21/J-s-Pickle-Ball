@@ -22,6 +22,7 @@ export default function ResetPage() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [show, setShow] = useState(false);
+  const [show2, setShow2] = useState(false);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -122,14 +123,19 @@ export default function ResetPage() {
             </label>
             <label>
               Confirm new password
-              <input
-                type="password"
-                required
-                autoComplete="new-password"
-                placeholder="Repeat password"
-                value={pw2}
-                onChange={(e) => setPw2(e.target.value)}
-              />
+              <div className="pw-wrap">
+                <input
+                  type={show2 ? "text" : "password"}
+                  required
+                  autoComplete="new-password"
+                  placeholder="Repeat password"
+                  value={pw2}
+                  onChange={(e) => setPw2(e.target.value)}
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShow2((s) => !s)}>
+                  {show2 ? "Hide" : "Show"}
+                </button>
+              </div>
             </label>
             <button className="btn primary block" type="submit" disabled={busy}>
               Set New Password

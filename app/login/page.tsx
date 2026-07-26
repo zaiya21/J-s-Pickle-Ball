@@ -44,6 +44,7 @@ export default function LoginPage() {
   const [regPassword, setRegPassword] = useState("");
   const [regPassword2, setRegPassword2] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
+  const [showRegPw2, setShowRegPw2] = useState(false);
   const [emailTaken, setEmailTaken] = useState(false);
 
   // forgot
@@ -352,14 +353,19 @@ export default function LoginPage() {
           </div>
           <label>
             Confirm password
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              placeholder="Repeat password"
-              value={regPassword2}
-              onChange={(e) => setRegPassword2(e.target.value)}
-            />
+            <div className="pw-wrap">
+              <input
+                type={showRegPw2 ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                placeholder="Repeat password"
+                value={regPassword2}
+                onChange={(e) => setRegPassword2(e.target.value)}
+              />
+              <button type="button" className="pw-toggle" onClick={() => setShowRegPw2((s) => !s)}>
+                {showRegPw2 ? "Hide" : "Show"}
+              </button>
+            </div>
           </label>
           <button className="btn primary block" type="submit" disabled={busy}>
             Create Account
