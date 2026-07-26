@@ -25,6 +25,9 @@ export default function ProfileClient({
   const [cur, setCur] = useState("");
   const [next, setNext] = useState("");
   const [next2, setNext2] = useState("");
+  const [showCur, setShowCur] = useState(false);
+  const [showNext, setShowNext] = useState(false);
+  const [showNext2, setShowNext2] = useState(false);
 
   async function saveProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -82,22 +85,49 @@ export default function ProfileClient({
         <form onSubmit={changePassword}>
           <label>
             Current password{" "}
-            <input type="password" required autoComplete="current-password" value={cur} onChange={(e) => setCur(e.target.value)} />
+            <div className="pw-wrap">
+              <input
+                type={showCur ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                value={cur}
+                onChange={(e) => setCur(e.target.value)}
+              />
+              <button type="button" className="pw-toggle" onClick={() => setShowCur((s) => !s)}>
+                {showCur ? "Hide" : "Show"}
+              </button>
+            </div>
           </label>
           <label>
             New password{" "}
-            <input
-              type="password"
-              required
-              autoComplete="new-password"
-              placeholder="Min. 8 chars, letters & numbers"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-            />
+            <div className="pw-wrap">
+              <input
+                type={showNext ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                placeholder="Min. 8 chars, letters & numbers"
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+              />
+              <button type="button" className="pw-toggle" onClick={() => setShowNext((s) => !s)}>
+                {showNext ? "Hide" : "Show"}
+              </button>
+            </div>
           </label>
           <label>
             Confirm new password{" "}
-            <input type="password" required autoComplete="new-password" value={next2} onChange={(e) => setNext2(e.target.value)} />
+            <div className="pw-wrap">
+              <input
+                type={showNext2 ? "text" : "password"}
+                required
+                autoComplete="new-password"
+                value={next2}
+                onChange={(e) => setNext2(e.target.value)}
+              />
+              <button type="button" className="pw-toggle" onClick={() => setShowNext2((s) => !s)}>
+                {showNext2 ? "Hide" : "Show"}
+              </button>
+            </div>
           </label>
           <button className="btn primary" type="submit">
             Update Password
