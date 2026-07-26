@@ -22,6 +22,7 @@ function resolveGallerySources(overrides: (string | null)[]): string[] {
   return out.length ? out : [GALLERY_PLACEHOLDER];
 }
 import ReviewForm from "@/components/ReviewForm";
+import Reveal from "@/components/Reveal";
 
 const SAMPLE_REVIEWS = [
   { name: "Migs R., 4.0 player", rating: 5, text: "Booking takes literally 30 seconds. Best-maintained courts in the city — the night lighting is perfect." },
@@ -73,48 +74,63 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Quick stats — numbers count in one after another */}
       <section className="band">
-        <div className="page-wrap stat-band">
+        <Reveal animation="stagger" className="page-wrap stat-band">
           <div className="stat"><div className="stat-num">{courts.length}</div><div className="stat-label">Courts</div></div>
           <div className="stat"><div className="stat-num">14</div><div className="stat-label">Hours open daily</div></div>
           <div className="stat"><div className="stat-num">{m(s.pricePerHour)}</div><div className="stat-label">Per hour</div></div>
           <div className="stat"><div className="stat-num">7 days</div><div className="stat-label">A week</div></div>
-        </div>
+        </Reveal>
       </section>
 
+      {/* Inside The Yard — gallery zooms into place */}
       <section className="page-wrap section">
-        <h2 className="section-title neon">Inside The Yard</h2>
-        <HomeGallery sources={resolveGallerySources(gallery)} />
+        <Reveal animation="up">
+          <h2 className="section-title neon">Inside The Yard</h2>
+        </Reveal>
+        <Reveal animation="zoom" delay={90}>
+          <HomeGallery sources={resolveGallerySources(gallery)} />
+        </Reveal>
       </section>
 
+      {/* Why Play At J's — cards cascade in */}
       <section className="page-wrap section">
-        <h2 className="section-title neon">Why Play At J&apos;s?</h2>
-        <div className="feature-grid">
+        <Reveal animation="up">
+          <h2 className="section-title neon">Why Play At J&apos;s?</h2>
+        </Reveal>
+        <Reveal animation="stagger" className="feature-grid">
           <div className="card feature"><h3>Tournament-Grade Courts</h3><p className="muted">Professional surfacing, regulation nets, and bright night lighting for evening games.</p></div>
           <div className="card feature"><h3>Real-Time Booking</h3><p className="muted">See live availability, reserve in seconds, and get instant confirmation with a booking reference.</p></div>
           <div className="card feature"><h3>Gear Rentals</h3><p className="muted">No paddle? Rent one for ₱50/hour at checkout — balls are on the house.</p></div>
           <div className="card feature"><h3>Multi-Hour Discounts</h3><p className="muted">Play longer for less — every hour after your first two is ₱50 off.</p></div>
           <div className="card feature"><h3>Player Amenities</h3><p className="muted">Free parking, showers, lockers, and a chill lounge for between-game recovery.</p></div>
           <div className="card feature"><h3>Open Play &amp; Events</h3><p className="muted">Weekly open-play nights, beginner clinics, and monthly tournaments for all levels.</p></div>
-        </div>
+        </Reveal>
       </section>
 
+      {/* 3 Easy Steps — the sequence builds 1 → 2 → 3 */}
       <section className="band">
         <div className="page-wrap section">
-          <h2 className="section-title neon">Booking In 3 Easy Steps</h2>
-          <div className="steps">
+          <Reveal animation="up">
+            <h2 className="section-title neon">Booking In 3 Easy Steps</h2>
+          </Reveal>
+          <Reveal animation="stagger" className="steps">
             <div className="step"><span className="step-num">1</span><h3>Create an account</h3><p className="muted">Register with your email and verify it — takes under a minute.</p></div>
             <div className="step-arrow">→</div>
             <div className="step"><span className="step-num">2</span><h3>Pick your slot</h3><p className="muted">Choose a court, date, and time from the live availability calendar.</p></div>
             <div className="step-arrow">→</div>
             <div className="step"><span className="step-num">3</span><h3>Pay &amp; play</h3><p className="muted">Pay by GCash, card, or at the venue. Show your booking reference and hit the court!</p></div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
+      {/* Pricing — cards tilt forward into place */}
       <section className="page-wrap section">
-        <h2 className="section-title neon">Simple, Honest Pricing</h2>
-        <div className="price-grid">
+        <Reveal animation="up">
+          <h2 className="section-title neon">Simple, Honest Pricing</h2>
+        </Reveal>
+        <Reveal animation="flip" className="price-grid">
           <div className="card price-card featured">
             <h3>Court Rate</h3>
             <div className="big-price"><span>{m(s.pricePerHour)}</span><span className="per">/ hr · weekday</span></div>
@@ -131,7 +147,7 @@ export default async function HomePage() {
             <div className="big-price"><span>{m(s.paddleRentPerHour)}</span><span className="per">/ paddle / hr</span></div>
             <p className="muted small">Balls included, free of charge</p>
           </div>
-        </div>
+        </Reveal>
         <p className="center" style={{ marginTop: "1rem" }}>
           <Link className="link" href="/pricing">
             See full pricing &amp; sample computations →
@@ -139,9 +155,12 @@ export default async function HomePage() {
         </p>
       </section>
 
+      {/* Find The Yard — slides in from the left */}
       <section className="page-wrap section">
-        <h2 className="section-title neon">Find The Yard</h2>
-        <div className="map-grid">
+        <Reveal animation="up">
+          <h2 className="section-title neon">Find The Yard</h2>
+        </Reveal>
+        <Reveal animation="left" className="map-grid">
           <div className="card">
             <h3>Location &amp; Hours</h3>
             <ul className="contact-list">
@@ -169,13 +188,16 @@ export default async function HomePage() {
               <span className="pin-tip">▼</span>
             </div>
           </div>
-        </div>
+        </Reveal>
       </section>
 
+      {/* What Players Say — quotes fan in, then the form slides from the right */}
       <section className="band">
         <div className="page-wrap section">
-          <h2 className="section-title neon">What Players Say</h2>
-          <div className="quote-grid">
+          <Reveal animation="up">
+            <h2 className="section-title neon">What Players Say</h2>
+          </Reveal>
+          <Reveal animation="stagger" className="quote-grid">
             {reviewList.map((r: any, i: number) => (
               <div className="card quote" key={r.id || i}>
                 <span className="stars-show" aria-label={`${r.rating} out of 5 stars`}>
@@ -185,13 +207,16 @@ export default async function HomePage() {
                 <span className="q-who">— {r.name}</span>
               </div>
             ))}
-          </div>
-          <ReviewForm existingRating={myReview?.rating ?? null} existingText={myReview?.text ?? null} />
+          </Reveal>
+          <Reveal animation="right" delay={80}>
+            <ReviewForm existingRating={myReview?.rating ?? null} existingText={myReview?.text ?? null} />
+          </Reveal>
         </div>
       </section>
 
+      {/* Final call to action — pops forward to close the page */}
       <section className="page-wrap">
-        <div className="cta-band big-cta">
+        <Reveal animation="zoom" className="cta-band big-cta">
           <div>
             <strong className="neon">Ready to rally?</strong>
             <p className="muted" style={{ marginTop: ".2rem" }}>
@@ -201,7 +226,7 @@ export default async function HomePage() {
           <Link className="btn primary big" href="/book">
             Book a Court →
           </Link>
-        </div>
+        </Reveal>
       </section>
     </>
   );
