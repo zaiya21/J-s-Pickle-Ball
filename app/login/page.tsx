@@ -44,6 +44,7 @@ export default function LoginPage() {
   const [regPassword, setRegPassword] = useState("");
   const [regPassword2, setRegPassword2] = useState("");
   const [showRegPw, setShowRegPw] = useState(false);
+  const [emailTaken, setEmailTaken] = useState(false);
 
   // forgot
   const [forgotEmail, setForgotEmail] = useState("");
@@ -107,9 +108,9 @@ export default function LoginPage() {
     if (regPassword !== regPassword2) return toast("Passwords do not match.", "error");
 
     setBusy(true);
-    let error;
+    let error, data;
     try {
-      ({ error } = await withTimeout(
+      ({ error, data } = await withTimeout(
         supabase.auth.signUp({
           email,
           password: regPassword,
@@ -121,16 +122,32 @@ export default function LoginPage() {
       ));
     } catch {
       setBusy(false);
-      return toast("The confirmation email is taking too long to send — check your SMTP settings (Brevo account may need activation).", "error");
+      return toast("The confirmation email is taking too long to send — check your SMTP settings.", "error");
     }
     setBusy(false);
+
     if (error) {
-      if (/registered|already/i.test(error.message))
-        return toast("That email is already registered.", "error");
+      if (/registered|already/i.test(error.message)) return showTaken();
       return toast(error.message, "error");
     }
+
+    /* With email confirmation ON, Supabase does not error on a duplicate signup
+       (anti email-enumeration). It returns an obfuscated user whose identities
+       array is empty — that's how we detect "already registered" and avoid
+       showing the "check your inbox" screen for an account that already exists. */
+    if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+      return showTaken();
+    }
+
     setPendingEmail(email);
     setPanel("verify");
+  }
+
+  /* Shown when the address already has an account: no second confirmation email
+     is sent, and we point the user at signing in / resetting instead. */
+  function showTaken() {
+    setEmailTaken(true);
+    toast("That email is already registered — please sign in instead.", "error");
   }
 
   async function resendConfirm() {
@@ -266,9 +283,43 @@ export default function LoginPage() {
               autoComplete="email"
               placeholder="you@example.com"
               value={regEmail}
-              onChange={(e) => setRegEmail(e.target.value)}
+              onChange={(e) => {
+                setRegEmail(e.target.value);
+                if (emailTaken) setEmailTaken(false); // clear once they edit it
+              }}
             />
           </label>
+          {emailTaken && (
+            <p className="field-error">
+              ⚠ This email is already registered.{" "}
+              <a
+                href="#"
+                className="link"
+                onClick={(ev) => {
+                  ev.preventDefault();
+                  setLoginEmail(regEmail.trim().toLowerCase());
+                  setEmailTaken(false);
+                  setPanel("login");
+                }}
+              >
+                Sign in instead
+              </a>{" "}
+              or{" "}
+              <a
+                href="#"
+                className="link"
+                onClick={(ev) => {
+                  ev.preventDefault();
+                  setForgotEmail(regEmail.trim().toLowerCase());
+                  setEmailTaken(false);
+                  setPanel("forgot");
+                }}
+              >
+                reset your password
+              </a>
+              .
+            </p>
+          )}
           <label>
             Mobile number <span className="muted small">(optional)</span>
             <input

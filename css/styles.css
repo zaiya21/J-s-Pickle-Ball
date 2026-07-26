@@ -842,6 +842,14 @@ body::after {
   .mobile-nav .mobile-signout { color: var(--danger); }
 }
 
+/* Inline validation message under an auth field (e.g. email already in use) */
+.field-error {
+  margin: -.35rem 0 .6rem; padding: .55rem .75rem; font-size: .85rem;
+  color: #fecaca; background: rgba(239, 68, 68, .12);
+  border: 1px solid rgba(239, 68, 68, .45); border-radius: 8px;
+}
+.field-error .link { color: #fff; text-decoration: underline; }
+
 /* ============ Events & News — lively image-forward cards ============ */
 .event-list {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
