@@ -842,6 +842,50 @@ body::after {
   .mobile-nav .mobile-signout { color: var(--danger); }
 }
 
+/* ============ Mobile density pass ============
+   Phones only — trims the tall vertical rhythm so pages need far less
+   scrolling, and turns the 3-step guide into compact numbered rows.
+   Everything here lives inside media queries; desktop is unchanged. */
+@media (max-width: 760px) {
+  /* Hero: was 4.5rem/3.5rem of padding — a whole screen before any content */
+  .hero { padding: 2rem 1rem 1.8rem; }
+  .hero-logo { width: min(140px, 34vw); margin-bottom: .8rem; }
+  .hero-sub { font-size: .92rem; margin-top: .5rem; }
+  .hero-cta { margin-top: 1rem; gap: .5rem; }
+
+  /* Section rhythm: 3rem top+bottom per section adds up fast on a phone */
+  .section { padding-top: 1.6rem; padding-bottom: 1.6rem; }
+  .section-title { margin-bottom: 1rem; }
+  .stat-band { padding-top: 1rem; padding-bottom: 1rem; gap: .8rem 1.2rem; }
+  .page-head { margin-bottom: 1rem; }
+  .footer { padding: 1rem; }
+
+  /* Cards: trim inner padding + grid gaps */
+  .feature { padding: 1.1rem .9rem; }
+  .f-ico { font-size: 1.7rem; margin-bottom: .35rem; }
+  .feature-grid, .quote-grid, .price-grid { gap: .7rem; }
+  .price-card { padding: 1.2rem 1rem; }
+  .cta-band { padding: .9rem 1rem; }
+  .map-grid { gap: .8rem; }
+
+  /* "Booking In 3 Easy Steps" — stacked full-size cards plus rotated arrows
+     made this the tallest block on the page. Compact numbered rows instead:
+     number on the left, text on the right, no arrow gaps. */
+  .steps { flex-direction: column; gap: .5rem; }
+  .step-arrow { display: none; }
+  .step {
+    display: grid; grid-template-columns: 34px 1fr; column-gap: .8rem;
+    align-items: center; max-width: none; width: 100%;
+    text-align: left; padding: .85rem 1rem;
+  }
+  .step-num {
+    grid-row: 1 / span 2; /* number sits left, spanning title + description */
+    width: 34px; height: 34px; font-size: 1rem; margin-bottom: 0;
+  }
+  .step h3 { grid-column: 2; font-size: 1rem; margin-bottom: .1rem; }
+  .step p { grid-column: 2; font-size: .84rem; }
+}
+
 /* Inline validation message under an auth field (e.g. email already in use) */
 .field-error {
   margin: -.35rem 0 .6rem; padding: .55rem .75rem; font-size: .85rem;
