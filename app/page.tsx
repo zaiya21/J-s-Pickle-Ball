@@ -23,6 +23,7 @@ function resolveGallerySources(overrides: (string | null)[]): string[] {
 }
 import ReviewForm from "@/components/ReviewForm";
 import Reveal from "@/components/Reveal";
+import SplitHeadline from "@/components/SplitHeadline";
 
 const SAMPLE_REVIEWS = [
   { name: "Migs R., 4.0 player", rating: 5, text: "Booking takes literally 30 seconds. Best-maintained courts in the city — the night lighting is perfect." },
@@ -55,11 +56,13 @@ export default async function HomePage() {
         <div className="hero-inner">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/Pickle Ball Logo.jpg" alt="J's Pickle Yard logo" className="hero-logo" />
-          <h1 className="neon">
-            Your Home Court
-            <br />
-            For <em>Pickleball</em>
-          </h1>
+          <SplitHeadline
+            className="neon"
+            lines={[
+              [{ text: "Your Home Court" }],
+              [{ text: "For " }, { text: "Pickleball", em: true }],
+            ]}
+          />
           <p className="hero-sub">
             Premium courts, easy online booking, and a community that loves the game. Open daily <strong>{hrs}</strong>.
           </p>
