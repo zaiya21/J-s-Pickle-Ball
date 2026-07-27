@@ -24,6 +24,7 @@ function resolveGallerySources(overrides: (string | null)[]): string[] {
 import ReviewForm from "@/components/ReviewForm";
 import Reveal from "@/components/Reveal";
 import SplitHeadline from "@/components/SplitHeadline";
+import HeroMotion from "@/components/HeroMotion";
 
 const SAMPLE_REVIEWS = [
   { name: "Migs R., 4.0 player", rating: 5, text: "Booking takes literally 30 seconds. Best-maintained courts in the city — the night lighting is perfect." },
@@ -52,8 +53,9 @@ export default async function HomePage() {
 
   return (
     <>
+      {/* Hero — replays its intro each time it scrolls back into view */}
       <section className="hero">
-        <div className="hero-inner">
+        <HeroMotion>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/Pickle Ball Logo.jpg" alt="J's Pickle Yard logo" className="hero-logo" />
           <SplitHeadline
@@ -74,7 +76,7 @@ export default async function HomePage() {
               View Pricing
             </Link>
           </div>
-        </div>
+        </HeroMotion>
       </section>
 
       {/* Quick stats — numbers count in one after another */}
