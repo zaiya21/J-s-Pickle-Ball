@@ -1,11 +1,14 @@
 "use client";
 /* Scroll-reveal wrapper.
 
+   REPLAYS BOTH WAYS: the observer keeps watching after the first reveal, so a
+   section animates in every time it enters the viewport — scrolling down or
+   back up. Equivalent to GSAP ScrollTrigger's
+   toggleActions: "play none none reverse".
+
    FAIL-SAFE BY DESIGN: the server-rendered markup carries no hiding class, so
-   if JavaScript never runs (or is slow) the content is simply visible. Only
-   after JS confirms the element is BELOW the fold does it arm the hidden state
-   and wait for the viewport — so a section can never end up stuck invisible,
-   and there is never a flash of content disappearing.
+   if JavaScript never runs the content is simply visible. Hiding only ever
+   happens to elements that are off-screen, so nothing visibly disappears.
 
    Motion values follow the ui-ux-pro-max guidance (see css/styles.css). */
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -41,19 +44,16 @@ export default function Reveal({
     // Respect the OS reduced-motion setting: stay visible, never animate.
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
 
-    // Already on screen when the page loads? Leave it visible — hiding it now
-    // would cause a visible flicker, and the hero already animates on load.
-    if (el.getBoundingClientRect().top < window.innerHeight * 0.9) return;
-
-    setPhase("armed"); // safe: the element is off-screen, so nobody sees it hide
+    // Start already-visible blocks in the shown state (no flash on load);
+    // everything below the fold starts hidden and waits its turn.
+    const onScreen = el.getBoundingClientRect().top < window.innerHeight * 0.9;
+    setPhase(onScreen ? "in" : "armed");
 
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setPhase("in");
-            io.unobserve(entry.target); // animate once
-          }
+          // Entering -> play. Leaving -> reset so it can play again next time.
+          setPhase(entry.isIntersecting ? "in" : "armed");
         });
       },
       // matches GSAP ScrollTrigger start: "top 85%"
@@ -61,13 +61,7 @@ export default function Reveal({
     );
     io.observe(el);
 
-    // Safety net: if anything goes wrong, reveal the content anyway.
-    const failsafe = setTimeout(() => setPhase("in"), 4000);
-
-    return () => {
-      io.disconnect();
-      clearTimeout(failsafe);
-    };
+    return () => io.disconnect();
   }, []);
 
   const motion =
